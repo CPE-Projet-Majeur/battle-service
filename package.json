@@ -15,5 +15,10 @@
   "bugs": {
     "url": "https://github.com/CPE-Projet-Majeur/battle-service/issues"
   },
-  "homepage": "https://github.com/CPE-Projet-Majeur/battle-service#readme"
+  "homepage": "https://github.com/CPE-Projet-Majeur/battle-service#readme",
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1",
+    "tournament-organizer": "^3.8.1"
+  }
 }
