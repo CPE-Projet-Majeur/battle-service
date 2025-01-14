@@ -1,5 +1,4 @@
 import {Server} from "socket.io";
-import ISocket from "./ISocket";
 import {EBattleActions} from "./EBattleActions";
 import SocketWrapper from "./SocketWrapper";
 import battleService from "../services/BattleService";
@@ -95,31 +94,25 @@ class BattleSocket  {
         })
         // Handle actions
         socketWrapper.socket.on(EBattleActions.BATTLE_RECEIVE_ACTION, (data: BattleReceiveData) => {
+            // TODO : Handle scenario when player tries to attack without beeing in a game (if !gameReady...)
             const accuracy: number = data.accuracy;
             const spellId: number = data.spellId;
             const battleId: number = socketWrapper.battleId
             console.log(`Received action from user ${socketWrapper.userId} for battle ${battleId} : spell ${spellId} / accuracy ${accuracy}`);
             BattleService.handleAction(spellId, battleId, accuracy, socketWrapper.userId)
             if (BattleService.isRoundOver(battleId)) {
+                // Send new game status to users
                 console.log(`Battle ID: ${battleId}'s round is over`);
-                const data: BattleSendData[] = BattleService.processActions(battleId);
-                data.forEach(sendData => {
-                    const user: User | undefined = UserDAO.getUserById(sendData.targetId);
+                const sendData: BattleSendData[] = BattleService.processActions(battleId);
+                BattleService.getPlayers(battleId).forEach((player: User): void => {
+                    const user: User | undefined = UserDAO.getUserById(player.id);
                     if (!user) return;
                     io.to(user.battleSocketId).emit(EBattleActions.BATTLE_SEND_ACTION, sendData);
                     if (socketWrapper.tournament) io.to(user.tournamentSocketId).emit(EBattleActions.BATTLE_RECEIVE_ACTION, sendData);
-                    // If user was defeated, the game is over
-                    // if (sendData.remainingHp <= 0) {
-                    //     const defeatData: BattleEndData = {
-                    //         userId: user.id,
-                    //         status: "lose"
-                    //     }
-                    //     io.to(user.battleSocketId).emit(EBattleActions.BATTLE_OVER, sendData);
-                    //     if (socketWrapper.tournament) io.to(user.tournamentSocketId).emit(EBattleActions.BATTLE_RECEIVE_ACTION, sendData);
-                    // }
                 })
                 BattleService.newRound(battleId);
                 if (battleService.isBattleOver(battleId)) {
+                    // Send game ending event to users
                     console.log(`Battle ID: ${battleId} is over`);
                     const results: BattleEndData[] = BattleService.getWinners(battleId);
                     results.forEach(resultData => {
@@ -128,7 +121,7 @@ class BattleSocket  {
                         io.to(user.battleSocketId).emit(EBattleActions.BATTLE_OVER, resultData)
                         if (socketWrapper.tournament) io.to(user.tournamentSocketId).emit(EBattleActions.BATTLE_OVER, resultData);
                     })
-                    // Delete game from DAO...
+                    // TODO : Delete game from DAO...
                 }
             }
         })

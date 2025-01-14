@@ -127,6 +127,7 @@ class BattleService {
         const battle: Battle | undefined = BattleDAO.getBattleById(battleId)
         if (!battle) return false;
         battle.players.forEach(player => player.spell = null);
+        battle.round ++;
         return true;
     }
 

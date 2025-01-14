@@ -1,7 +1,7 @@
 import User from "../model/User";
-import ADAO from "./ADAO";
+import AbstractDAO from "./AbstractDAO";
 
-class UserDAO extends ADAO {
+class UserDAO extends AbstractDAO {
 
     private _users: User[] = []
 

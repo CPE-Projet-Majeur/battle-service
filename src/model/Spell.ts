@@ -1,5 +1,5 @@
-import {EAffinity} from "./EAffinity";
-import {EType} from "./EType";
+import {EAffinity} from "./enums/EAffinity";
+import {EType} from "./enums/EType";
 
 export default class Spell{
     private _id: number;

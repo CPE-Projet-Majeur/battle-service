@@ -1,5 +1,5 @@
-import {EHouse} from "./EHouse";
-import {EWeather} from "./EWeather";
+import {EHouse} from "./enums/EHouse";
+import {EWeather} from "./enums/EWeather";
 
 export default class User {
     private _id:number;

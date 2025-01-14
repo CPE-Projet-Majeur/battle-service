@@ -1,4 +1,4 @@
-export default abstract class ADAO{
+export default abstract class AbstractDAO {
     private currentId: number = 1;
 
     public generateId(): number {

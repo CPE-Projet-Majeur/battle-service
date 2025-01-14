@@ -1,8 +1,8 @@
 import Battle from "../model/Battle";
-import ADAO from "./ADAO";
+import AbstractDAO from "./AbstractDAO";
 import User from "../model/User";
 
-class BattleDAO extends ADAO {
+class BattleDAO extends AbstractDAO {
 
     private _battles: Battle[] = [];
 

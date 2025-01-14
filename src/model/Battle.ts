@@ -1,5 +1,5 @@
 import User from "./User";
-import {EWeather} from "./EWeather";
+import {EWeather} from "./enums/EWeather";
 import Spell from "./Spell";
 
 class Player {
@@ -87,6 +87,10 @@ export default class Battle {
 
     get round(): number {
         return this._round;
+    }
+
+    set round(value: number) {
+        this._round = value;
     }
 
     get tournamentId(): number {

@@ -1,8 +1,8 @@
-import ADAO from "./ADAO";
+import AbstractDAO from "./AbstractDAO";
 import Spell from "../model/Spell";
 
 
-class SpellDAO extends ADAO {
+class SpellDAO extends AbstractDAO {
 
     private static tempData : Spell[] = [
         new Spell(1, "Aguamenti", 1, 1, 20),
