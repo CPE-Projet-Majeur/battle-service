@@ -11,7 +11,7 @@ class UserDAO extends ADAO {
         return user;
     }
 
-    public getUserById(id: number): User {
+    public getUserById(id: number): User | undefined {
         return this._users.find(user => user.id === id);
     }
 }

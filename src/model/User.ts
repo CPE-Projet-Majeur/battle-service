@@ -12,8 +12,8 @@ export default class User {
     // private wins:number;
     // private defeats:number;
     // private roles: String[];
-    private _battleSocketId: string;
-    private _tournamentSocketId: string;
+    private _battleSocketId: string = "";
+    private _tournamentSocketId: string = "";
 
     public constructor(id:number, lastName: string, firstName: string, house: number) {
         this._id = id;

@@ -5,9 +5,10 @@ import Spell from "./Spell";
 class Player {
     private static HEALTH_POINTS: number = 100;
     private readonly _user: User;
-    private _spell : Spell;
-    private _accuracy: number;
-    private _hp: number;
+    private _status: string = "alive";
+    private _spell : Spell | null = null;
+    private _accuracy: number = 0;
+    private _hp: number = Player.HEALTH_POINTS;
 
     constructor(user: User) {
         this._user = user;
@@ -30,11 +31,11 @@ class Player {
     }
 
 
-    get spell(): Spell {
+    get spell(): Spell | null {
         return this._spell;
     }
 
-    set spell(value: Spell) {
+    set spell(value: Spell | null) {
         this._spell = value;
     }
 
@@ -45,18 +46,26 @@ class Player {
     set accuracy(value: number) {
         this._accuracy = value;
     }
+
+
+    get status(): string {
+        return this._status;
+    }
+
+    set status(value: string) {
+        this._status = value;
+    }
 }
 
 export default class Battle {
     public static readonly DRAW: number = 0;
-    public static readonly NONE: number = -1;
 
     private readonly _id:number;
     private readonly _players: Map<number, Player> = new Map();
     private readonly _tournamentId: number;
     private readonly _weather: EWeather;
     private _round: number = 0;
-    private _winner: number = Battle.NONE;
+    private _winners: number[] = [];
 
     constructor(id: number, tournamentId: number, weather: number) {
         // this._players.set(player1.id, new Player(player1));
@@ -88,12 +97,12 @@ export default class Battle {
         return this._weather;
     }
 
-    get winner(): number {
-        return this._winner;
+    get winners(): number[] {
+        return this._winners;
     }
 
-    set winner(value: number) {
-        this._winner = value;
+    set winners(value: number[]) {
+        this._winners = value;
     }
 
     get players(): Map<number, Player> {

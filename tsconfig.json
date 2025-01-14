@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "es2019",                      // Version de ECMAScript cible
+    "module": "commonjs",                    // Module system utilisé par Node.js
+    "outDir": "./dist",                      // Dossier de sortie pour les fichiers compilés
+    "rootDir": "./src",                      // Dossier racine de vos fichiers sources
+    "strict": true,                          // Active le mode strict pour une meilleure sécurité de typage
+    "esModuleInterop": true,                 // Permet d'importer des modules CommonJS de manière plus intuitive
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,                    // Ignore la vérification de types dans les fichiers de définition de bibliothèques
+    "sourceMap": true                        // Génère des fichiers source map pour faciliter le débogage
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "**/*.spec.ts"]
+}

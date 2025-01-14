@@ -8,17 +8,18 @@ class BattleDAO extends ADAO {
 
     public save(battle: Battle): Battle {
         const id: number = this.generateId();
-        const sBattle = new Battle(id, battle.player1, battle.player2, battle.round, battle.tournamentId, battle.weather)
-        this._battles.push(battle);
+        const sBattle = new Battle(id, battle.tournamentId, battle.weather)
+        this._battles.push(sBattle);
         return sBattle;
     }
 
-    public getBattleById(id: number): Battle {
+    public getBattleById(id: number): Battle | undefined {
         return this._battles.find(battle => battle.id === id);
     }
 
-    public delete(id: number): void {
-        this._battles.splice(id, 1);
+    public delete(id: number): boolean {
+        const erase : Battle[] = this._battles.splice(id, 1);
+        return erase.length !== 0;
     }
 }
 
