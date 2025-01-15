@@ -67,8 +67,9 @@ class TournamentService {
     public createNewBracket(tournament: Tournament): TournamentNode[] | null {
         const newBracket: TournamentNode[] | null = this.computeNewBracket(tournament);
         if (!newBracket) return null;
-        tournament.currentBracket ++
+        tournament.currentBracket ++;
         tournament.tree.set(tournament.currentBracket, newBracket);
+        console.log(`New bracket for tournament ${tournament.id}`, newBracket);
         return newBracket;
     }
 

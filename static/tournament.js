@@ -77,17 +77,23 @@ document.getElementById('connectButton').addEventListener('click', () => {
     });
 
     // Fin tournois
-    socket.on(ETournamentActions.TOURNAMENT_BRACKET_START, (data) => {
+    socket.on(ETournamentActions.TOURNAMENT_OVER, (data) => {
         const message = `Fin du tournois : ! Gagnants : ${data.winnersIds.join(', ')}`;
         addLog(message);
     });
 
+    // Error
+    socket.on("ERROR", (data) => {
+        const message = `ERROR ${data.code} : ${data.message}`;
+        alert(message);
+    });
+
     // Réception de la mise à jour du tournoi
-    socket.on(ETournamentActions.TOURNAMENT_UPDATED, (tree) => {
-        console.log(tree)
+    socket.on(ETournamentActions.TOURNAMENT_UPDATED, (data) => {
+        console.log(data.tree)
         document.getElementById('updateTournamentResult').innerHTML =
-            `Arbre du tournoi mis à jour: ${JSON.stringify(tree)}`;
-        addLog(`Mise à jour du tournoi: ${JSON.stringify(tree)}`);
+            `Arbre du tournoi mis à jour: ${JSON.stringify(data.tree)}`;
+        addLog(`Mise à jour du tournoi: ${JSON.stringify(data.tree)}`);
     });
 });
 

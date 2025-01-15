@@ -1,4 +1,5 @@
 import TournamentNode from "./TournamentNode";
+import User from "./User";
 
 export default class Tournament {
     private _id : number;
@@ -6,6 +7,7 @@ export default class Tournament {
     private _name: string;
     private _active: boolean = false;
     private _usersId: number[] = [];
+    private _users: User[] = []
     private _tree: Map<number, TournamentNode[]> = new Map();
     private _currentBracket: number = 0;
     private _winners: number[] = [];
@@ -16,6 +18,14 @@ export default class Tournament {
         this._id = id
         this._code = code
         this._name = name;
+    }
+
+    public serializeTree(): TournamentNode[][] {
+        const ret : TournamentNode[][] = [];
+        this._tree.forEach((value: TournamentNode[]): void => {
+            ret.push(value);
+        })
+        return ret;
     }
 
     get id(): number {
@@ -76,5 +86,13 @@ export default class Tournament {
 
     set winners(value: number[]) {
         this._winners = value;
+    }
+
+    get users(): User[] {
+        return this._users;
+    }
+
+    set users(value: User[]) {
+        this._users = value;
     }
 }

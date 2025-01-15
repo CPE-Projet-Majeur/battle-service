@@ -5,11 +5,11 @@ import battleService from "../services/BattleService";
 import User from "../model/User";
 import BattleService from "../services/BattleService";
 import UserDAO from "../dao/UserDAO";
-import {eventBus} from "../bus/eventBus";
 import Battle from "../model/Battle";
 import {EEvents} from "./events/EEvents";
 import TournamentService from "../services/TournamentService";
 import Tournament from "../model/Tournament";
+import {eventBus} from "../bus/eventBus";
 
 type WaitingData = {
     battleId: number;
@@ -51,9 +51,11 @@ class BattleSocket  {
             //     console.log(`User ${socketWrapper.userId} is already waiting or in battle`);
             //     return;
             // }
-            let battleId: number = data.battleId;
+            console.log("BATTLE_WAITING", data);
+            let battleId: number = Number(data.battleId);
             const userId: number = wrapper.userId;
             const weather: number = typeof data.weather !== "undefined" ? data.weather : 0;
+            console.log("BATTLE_WAITING BIS", battleId, userId, weather);
             const battleExists: boolean = typeof battleId !== "undefined";
             // Tournament mode : battle already exists
             if (battleExists) {

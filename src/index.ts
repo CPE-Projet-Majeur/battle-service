@@ -8,6 +8,7 @@ import SocketWrapper from "./sockets/SocketWrapper";
 import User from "./model/User";
 import path = require("path");
 import UserDAO from "./dao/UserDAO";
+import TournamentEventListener from "./bus/TournamentEventListener";
 
 class MyApp {
     //private readonly PORT: number = CONFIG.port;
@@ -34,6 +35,8 @@ class MyApp {
 
         ////////////////// SOCKETS //////////////////
         this.io = new Server(this.server);
+        const eventListener: TournamentEventListener = new TournamentEventListener(this.io);
+
         this.io.on('connection', (socket) => {
             // TODO : more guards
             const userId: number = Number(socket.handshake.query.userId);
@@ -44,10 +47,11 @@ class MyApp {
             // Create user if it does not exist
             let user: User | undefined = UserDAO.getUserById(userId);
             if (!user) {
-                // user = new User(userId, "Floppa", "McFlopper", 0);
                 user = new User(userId, userFirstName, userLastName, userHouse);
                 user = UserDAO.save(user);
             }
+            // Join room of sockets associated with the user
+            socket.join(`user_${user.id}`)
             // Set socket wrapper (bad DIP ....) to keep userId in memory
             const wrapper: SocketWrapper = new SocketWrapper(socket, user.id);
             // Set socket events TODO : rework needed (now with emit bus, those can be really separated...
