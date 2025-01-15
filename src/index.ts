@@ -2,7 +2,7 @@
 import express, {Express} from 'express';
 import {createServer} from 'http';
 import {Server} from "socket.io";
-import BattleSocket from "./sockets/battleSocket";
+import BattleSocket from "./sockets/BattleSocket";
 import TournamentSocket from "./sockets/tournamentSocket";
 import SocketWrapper from "./sockets/SocketWrapper";
 import User from "./model/User";

@@ -1,7 +1,7 @@
 import BattleDAO from "../dao/BattleDAO";
 import Battle from "../model/Battle";
 import SpellDAO from "../dao/SpellDAO";
-import {BattleEndData, BattleSendData} from "../sockets/battleSocket";
+import {BattleEndData, BattleSendData} from "../sockets/BattleSocket";
 import UserDAO from "../dao/UserDAO";
 import User from "../model/User";
 
