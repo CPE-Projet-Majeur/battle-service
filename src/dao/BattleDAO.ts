@@ -17,9 +17,11 @@ class BattleDAO extends AbstractDAO {
         return this._battles.find(battle => battle.id === id);
     }
 
-    public delete(id: number): boolean {
-        const erase : Battle[] = this._battles.splice(id, 1);
-        return erase.length !== 0;
+    public delete(battle: Battle): boolean {
+        const index: number = this._battles.findIndex(b => b.id === battle.id);
+        if (index === -1) return false;
+        this._battles.splice(index, 1);
+        return true;
     }
 }
 

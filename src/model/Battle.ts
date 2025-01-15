@@ -61,7 +61,7 @@ export default class Battle {
     public static readonly DRAW: number = 0;
 
     private readonly _id:number;
-    private readonly _players: Map<number, Player> = new Map();
+    private readonly _players: Map<number, Player | null > = new Map();
     private readonly _tournamentId: number;
     private readonly _weather: EWeather;
     private _round: number = 0;
@@ -109,7 +109,7 @@ export default class Battle {
         this._winners = value;
     }
 
-    get players(): Map<number, Player> {
+    get players(): Map<number, Player | null> {
         return this._players;
     }
 }

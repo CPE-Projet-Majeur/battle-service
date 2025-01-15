@@ -12,6 +12,10 @@ class BattleService {
 
     private _waitingPlayersId: Battle[] = [];
 
+    public getBattle(battleId: number): Battle | undefined {
+        return BattleDAO.getBattleById(battleId);
+    }
+
     /**
      * Handles joining a battle out of a tournament
      * @param id
@@ -36,13 +40,11 @@ class BattleService {
     /**
      * Handles joining a tournament's battle.
      * @param id
-     * @param battleId
+     * @param battle
      */
-    public handleJoining(id: number, battleId: number): number{
+    public handleJoining(id: number, battle: Battle): number{
         const user: User | undefined = UserDAO.getUserById(id);
         if (!user) return -1
-        const battle: Battle | undefined = BattleDAO.getBattleById(battleId);
-        if (!battle) return -1
         if (!battle.players.has(id)) return -1; // Player not allowed in this pre-made battle
         battle.addPlayer(user);
         return battle.id;
@@ -50,25 +52,26 @@ class BattleService {
 
     /**
      * Check if a given battle is ready
-     * @param battleId
+     * @param battle
      */
-    public isBattleReady(battleId: number): boolean {
-        const battle: Battle | undefined = BattleDAO.getBattleById(battleId)
-        if (!battle) return false;
-        return battle.players.size == BattleService.PLAYER_COUNT;
+    public isBattleReady(battle: Battle): boolean {
+        let playerCount: number = 0;
+        battle.players.forEach(player => {
+            if (player) playerCount++;
+        })
+        return playerCount === BattleService.PLAYER_COUNT;
+        //return battle.players.size == BattleService.PLAYER_COUNT;
     }
 
     /**
      *
      * @param spellId
-     * @param battleId
+     * @param battle
      * @param accuracy
      * @param userId
      * @return boolean if the action succeeded
      */
-    public handleAction(spellId: number, battleId: number, accuracy: number, userId: number): boolean {
-        const battle: Battle | undefined = BattleDAO.getBattleById(battleId);
-        if (!battle) return false;
+    public handleAction(spellId: number, battle: Battle, accuracy: number, userId: number): boolean {
         // @ts-ignore
         battle.players.get(userId).spell = SpellDAO.getSpellById(spellId)
         // @ts-ignore
@@ -79,19 +82,18 @@ class BattleService {
     /**
      * Process user actions for a game where players act at the same time.
      * Defeated users are removed from the match.
-     * @param battleId
+     * @param battle
      */
-    public processActions(battleId: number): BattleSendData[] {
-        const battle: Battle | undefined = BattleDAO.getBattleById(battleId);
-        if (!battle) return [];
+    public processActions(battle: Battle): BattleSendData[] {
         const result: BattleSendData[] = [];
-        //const defeated: number[] = []
         // Handle damage for all players remaining
         battle.players.forEach(player => {
+            if (!player) return;
             // final : damage * affinité de type par rapport à maison * météo
             if (!player.spell) return;
             const damage : number = player.spell.damage * player.accuracy;
             battle.players.forEach(target => {
+                if (!target) return; // User is not in the game...
                 if (target.user.id === player.user.id) return
                 target.hp = target.hp - damage;
                 if (target.hp <= 0 ) {
@@ -113,40 +115,38 @@ class BattleService {
         return result
     }
 
-    public isRoundOver(battleId: number): boolean {
-        const battle: Battle | undefined = BattleDAO.getBattleById(battleId)
-        if (!battle) return false;
+    public isRoundOver(battle: Battle): boolean {
         let ret : boolean = true;
         battle.players.forEach(player => {
+            if (!player) return;
             if (!player.spell) ret = false;
         })
         return ret;
     }
 
-    public newRound(battleId: number) : boolean {
-        const battle: Battle | undefined = BattleDAO.getBattleById(battleId)
-        if (!battle) return false;
-        battle.players.forEach(player => player.spell = null);
+    public newRound(battle: Battle) : boolean {
+        battle.players.forEach(player => {
+            if (!player) return;
+            player.spell = null
+        });
         battle.round ++;
         return true;
     }
 
-    public isBattleOver(battleId: number): boolean {
-        const battle: Battle | undefined = BattleDAO.getBattleById(battleId)
-        if (!battle) return false;
+    public isBattleOver(battle: Battle): boolean {
         let numberFighting: number = battle.players.size;
         battle.players.forEach(player => {
+            if (!player) return;
             if (player.status == "defeated") numberFighting--;
         })
         return numberFighting <= BattleService.TEAM_SIZE;
     }
 
-    public getWinners(battleId: number): BattleEndData[] {
-        const battle: Battle | undefined = BattleDAO.getBattleById(battleId)
-        if (!battle) return [];
-        if (!this.isBattleOver(battleId)) return [];
+    public getWinners(battle: Battle): BattleEndData[] {
+        if (!this.isBattleOver(battle)) return [];
         // Compute winners
         battle.players.forEach(player => {
+            if (!player) return;
             if (player.status != "defeated") battle.winners.push(player.user.id);
         })
         const draw: boolean = battle.winners.length == 0;
@@ -154,6 +154,7 @@ class BattleService {
         // Prepare data
         const data: BattleEndData[] = []
         battle.players.forEach(player => {
+            if (!player) return;
             let status : string = player.status;
             if (battle.winners.includes(player.user.id)) status = "won";
             data.push({
@@ -164,37 +165,43 @@ class BattleService {
         return data;
     }
 
-    public getPlayers(battleId: number): User[]{
-        const battle: Battle | undefined = BattleDAO.getBattleById(battleId)
-        if (!battle) return [];
+    public getPlayers(battle: Battle): User[]{
         const result: User[] = [];
         battle.players.forEach(player => {
-            result.push(player.user);
+            if (player) result.push(player.user);
         })
         return result;
     }
 
-    public getWeather(battleId: number): number{
-        const battle: Battle | undefined = BattleDAO.getBattleById(battleId)
-        if (!battle) return -1;
+    public getWeather(battle: Battle): number{
         return battle.weather;
     }
 
     /**
      * Handle player disconnection
-     * @param battleId Id of the battle for this user
+     * @param battle Id of the battle for this user
      * @param userId User's Id
      * @return true if the player was disconnected from a match, false otherwise
      */
-    public playerDisconnect(battleId: number, userId: number): boolean {
-        const battle: Battle | undefined = BattleDAO.getBattleById(battleId)
-        if (!battle) return false;
+    public playerDisconnect(battle: Battle, userId: number): boolean {
         return battle.players.delete(userId);
     }
 
-    public deleteBattle(battleId: number): boolean {
-        return BattleDAO.delete(battleId);
+    public deleteBattle(battle: Battle): boolean {
+        return BattleDAO.delete(battle);
+    }
+
+    public createBattle(tournamentId: number, playerIds: number[]): number {
+        // WEATHER
+        const battle: Battle = new Battle(-1, tournamentId, 0);
+        const sBattle: Battle = BattleDAO.save(battle);
+        playerIds.forEach(id => {
+            sBattle.players.set(id, null)
+        })
+        return sBattle.id;
     }
 }
+
+// TODO : WEATHER IS GIVEN EACH ACTION
 
 export default new BattleService();

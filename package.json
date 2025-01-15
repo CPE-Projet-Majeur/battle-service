@@ -4,7 +4,9 @@
   "description": "A battle service for our project",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "dev": "tsc && node dist/index.js"
   },
   "repository": {
     "type": "git",
@@ -19,7 +21,6 @@
   "dependencies": {
     "express": "^4.21.2",
     "socket.io": "^4.8.1",
-    "tournament-organizer": "^3.8.1",
     "typescript": "^5.7.3"
   },
   "devDependencies": {

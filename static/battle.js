@@ -24,6 +24,9 @@ function createSocket(userId, type) {
     return io(SERVER_URL, {
         query: {
             userId: userId,
+            userFirstName: `floppa-${1}`,
+            userLastName: `McFlopper`,
+            userHouse: 0,
             type: type // 'tournament' ou autre (pour ce test, on peut laisser vide ou 'battle')
         }
     });
