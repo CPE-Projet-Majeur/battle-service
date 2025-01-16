@@ -89,20 +89,17 @@ class BattleService {
      */
     public processActions(battle: Battle): BattleSendData[] {
         const result: BattleSendData[] = [];
-        // Handle damage for all players remaining
         battle.players.forEach(player => {
             if (!player) return;
             // final : damage * affinité de type par rapport à maison * météo
             if (!player.spell) return;
             const damage : number = player.spell.damage * player.accuracy;
             battle.players.forEach(target => {
-                if (!target) return; // User is not in the game...
+                if (!target) return;
+                // If same team, return
                 if (target.user.id === player.user.id) return
                 target.hp = target.hp - damage;
-                if (target.hp <= 0 ) {
-                    //defeated.push(target.user.id)
-                    player.status = "defeated";
-                }
+                if (target.hp <= 0 ) target.status = "defeated";
                 result.push({
                     targetId: target.user.id,
                     damage: damage,
@@ -113,9 +110,30 @@ class BattleService {
                 })
             })
         })
-        // Handle defeats and update
-        //defeated.forEach(playerId => battle.players.delete(playerId))
         return result
+    }
+
+    public processWinners(battle: Battle): BattleEndData[] {
+        if (!this.isBattleOver(battle)) return [];
+        // Compute winners
+        battle.players.forEach(player => {
+            if (!player) return;
+            if (player.status != "defeated") battle.winners.push(player.user.id);
+        })
+        const draw: boolean = battle.winners.length == 0;
+        // TODO : check that winners.length < NUMBER OF PLAYERS THAT CAN WIN
+        // Prepare data
+        const data: BattleEndData[] = []
+        battle.players.forEach(player => {
+            if (!player) return;
+            let status : string = player.status;
+            if (battle.winners.includes(player.user.id)) status = "won";
+            data.push({
+                userId: player.user.id,
+                status: draw ? "draw" : status
+            })
+        })
+        return data;
     }
 
     public isRoundOver(battle: Battle): boolean {
@@ -143,29 +161,6 @@ class BattleService {
             if (player.status == "defeated") numberFighting--;
         })
         return numberFighting <= BattleService.TEAM_SIZE;
-    }
-
-    public getWinners(battle: Battle): BattleEndData[] {
-        if (!this.isBattleOver(battle)) return [];
-        // Compute winners
-        battle.players.forEach(player => {
-            if (!player) return;
-            if (player.status != "defeated") battle.winners.push(player.user.id);
-        })
-        const draw: boolean = battle.winners.length == 0;
-        // TODO : check that winners.length < NUMBER OF PLAYERS THAT CAN WIN
-        // Prepare data
-        const data: BattleEndData[] = []
-        battle.players.forEach(player => {
-            if (!player) return;
-            let status : string = player.status;
-            if (battle.winners.includes(player.user.id)) status = "won";
-            data.push({
-                userId: player.user.id,
-                status: draw ? "draw" : status
-            })
-        })
-        return data;
     }
 
     public getPlayers(battle: Battle): User[]{

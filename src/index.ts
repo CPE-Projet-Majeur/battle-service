@@ -52,9 +52,8 @@ class MyApp {
             }
             // Join room of sockets associated with the user
             socket.join(`user_${user.id}`)
-            // Set socket wrapper (bad DIP ....) to keep userId in memory
+            // Set socket events
             const wrapper: SocketWrapper = new SocketWrapper(socket, user.id);
-            // Set socket events TODO : rework needed (now with emit bus, those can be really separated...
             if (type == 'tournament') {
                 console.log(`Received ${userId} connected for a tournament`);
                 TournamentSocket.setSocket(this.io, wrapper);
@@ -65,10 +64,7 @@ class MyApp {
             // Handle disconnection
             socket.on('disconnect', () => {
                 console.log(`Disconnected from ${socket.id}`);
-                if (type == 'tournament') {
-
-                    TournamentSocket.handleDisconnect()
-                }
+                if (type == 'tournament') TournamentSocket.handleDisconnect()
                 BattleSocket.handleDisconnect(this.io, wrapper)
             })
         })

@@ -1,4 +1,4 @@
-import {ECommonEvents} from "../sockets/events/ECommonEvents";
+import {ESharedEvents} from "../sockets/events/ESharedEvents";
 import Tournament from "../model/Tournament";
 import TournamentService from "../services/TournamentService";
 import {ETournamentEvents} from "../sockets/events/ETournamentEvents";
@@ -22,7 +22,7 @@ export default class TournamentEventListener {
 
     constructor(io:Server) {
         this._io = io;
-        eventBus.on(ECommonEvents.BRACKET_UPDATE, (data: BracketUpdateDate)=> {
+        eventBus.on(ESharedEvents.BRACKET_UPDATE, (data: BracketUpdateDate)=> {
             console.log(`EVENT LISTENER : Battle ${data.battleId} updated for tournament ${data.tournamentId}'s current bracket!`);
             const tournament: Tournament | undefined = TournamentService.getTournament(data.tournamentId);
             if (!tournament) return
@@ -41,7 +41,7 @@ export default class TournamentEventListener {
                 console.log(`Tournament ${tournament.id}'s current bracket (${tournament.currentBracket}) is over.`)
                 const newBracket : TournamentNode[] | null = TournamentService.createNewBracket(tournament)
                 if (!newBracket) {
-                    io.to(roomName).emit(ECommonEvents.ERROR, {
+                    io.to(roomName).emit(ESharedEvents.ERROR, {
                         code: 1,
                         message: `Tournament ${tournament.id}'s new bracket could not be computed.`,
                     })

@@ -7,7 +7,11 @@ class UserDAO extends AbstractDAO {
 
     public save(user: User): User {
         // User id is already correct wehn received
-        this._users.push(user);
+        let exists: boolean = false;
+        this._users.forEach((u: User) => {
+            if (u.id === user.id) exists = true;
+        })
+        if (!exists) this._users.push(user);
         return user;
     }
 

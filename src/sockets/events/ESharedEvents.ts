@@ -3,7 +3,8 @@ export type ErrorData = {
     message: string
 }
 
-export enum ECommonEvents {
+export enum ESharedEvents {
     BRACKET_UPDATE = 'BRACKET_UPDATE',
-    ERROR = "ERROR"
+    ERROR = "ERROR",
+    UPDATE_USER_BATTLE = "UPDATE_USER_BATTLE",
 }
