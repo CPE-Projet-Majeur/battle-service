@@ -92,8 +92,8 @@ document.getElementById('connectButton').addEventListener('click', () => {
     socket.on(ETournamentActions.TOURNAMENT_UPDATED, (data) => {
         console.log(data.tree)
         document.getElementById('updateTournamentResult').innerHTML =
-            `Arbre du tournoi mis à jour: ${JSON.stringify(data.tree)}`;
-        addLog(`Mise à jour du tournoi: ${JSON.stringify(data.tree)}`);
+            `Arbre du tournoi mis à jour: ${JSON.parse(data.tree)}`;
+        addLog(`Mise à jour du tournoi: ${data.tree}`);
     });
 });
 

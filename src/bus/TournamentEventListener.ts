@@ -1,7 +1,7 @@
-import {EEvents} from "../sockets/events/EEvents";
+import {ECommonEvents} from "../sockets/events/ECommonEvents";
 import Tournament from "../model/Tournament";
 import TournamentService from "../services/TournamentService";
-import {ETournamentActions} from "../sockets/events/ETournamentActions";
+import {ETournamentEvents} from "../sockets/events/ETournamentEvents";
 import TournamentNode from "../model/TournamentNode";
 import User from "../model/User";
 import userDAO from "../dao/UserDAO";
@@ -22,7 +22,7 @@ export default class TournamentEventListener {
 
     constructor(io:Server) {
         this._io = io;
-        eventBus.on(EEvents.BRACKET_UPDATE, (data: BracketUpdateDate)=> {
+        eventBus.on(ECommonEvents.BRACKET_UPDATE, (data: BracketUpdateDate)=> {
             console.log(`EVENT LISTENER : Battle ${data.battleId} updated for tournament ${data.tournamentId}'s current bracket!`);
             const tournament: Tournament | undefined = TournamentService.getTournament(data.tournamentId);
             if (!tournament) return
@@ -32,8 +32,8 @@ export default class TournamentEventListener {
             // If tournament is over
             if(TournamentService.isTournamentOver(tournament)) {
                 console.log(`Tournament ${tournament.id} is over ! Winners : ${tournament.winners}`)
-                //this._io.emit(ETournamentActions.TOURNAMENT_OVER, {winnersIds: tournament.winners });
-                io.to(roomName).emit(ETournamentActions.TOURNAMENT_OVER, {winnersIds: tournament.winners });
+                //this._io.emit(ETournamentEvents.TOURNAMENT_OVER, {winnersIds: tournament.winners });
+                io.to(roomName).emit(ETournamentEvents.TOURNAMENT_OVER, {winnersIds: tournament.winners });
                 return
             }
             // Else, if current bracket is over
@@ -41,7 +41,7 @@ export default class TournamentEventListener {
                 console.log(`Tournament ${tournament.id}'s current bracket (${tournament.currentBracket}) is over.`)
                 const newBracket : TournamentNode[] | null = TournamentService.createNewBracket(tournament)
                 if (!newBracket) {
-                    io.to(roomName).emit(EEvents.ERROR, {
+                    io.to(roomName).emit(ECommonEvents.ERROR, {
                         code: 1,
                         message: `Tournament ${tournament.id}'s new bracket could not be computed.`,
                     })
@@ -57,10 +57,10 @@ export default class TournamentEventListener {
                             userIds : node.userIds,
                             tree : tournament.tree,
                         }
-                        // io.to(user.tournamentSocketId).emit(ETournamentActions.TOURNAMENT_BRACKET_START,data)
+                        // io.to(user.tournamentSocketId).emit(ETournamentEvents.TOURNAMENT_BRACKET_START,data)
                         const roomName = `user_${user.id}`
                         console.log(`Sending to sockets in room ${roomName}`) // Non tournament socket linked to users will also receive it...
-                        io.to(roomName).emit(ETournamentActions.TOURNAMENT_BRACKET_START,data);
+                        io.to(roomName).emit(ETournamentEvents.TOURNAMENT_BRACKET_START,data);
                     })
                 })
             }

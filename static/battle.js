@@ -44,6 +44,7 @@ function addLog(msg) {
 // Bouton pour rejoindre ou créer un battle
 joinBattleBtn.addEventListener("click", () => {
     const { userId, battleId, weather } = getInputValues();
+    console.log(`USER: ${userId}`)
     // Pour ce test, on considère que le type est "battle"
     if (!socket) {
         socket = createSocket(userId, "battle");
@@ -51,6 +52,8 @@ joinBattleBtn.addEventListener("click", () => {
         // Gestion des événements émis par le serveur
         socket.on("BATTLE_START", data => {
             addLog("BATTLE_START reçu : " + JSON.stringify(data));
+            document.getElementById("battleId").innerHTML = data.battleId;
+            document.getElementById("battleId").setAttribute("value", data.battleId);
         });
         socket.on("BATTLE_SEND_ACTION", data => {
             addLog("BATTLE_SEND_ACTION reçu : " + JSON.stringify(data));
@@ -62,6 +65,10 @@ joinBattleBtn.addEventListener("click", () => {
         socket.on("connect", () => {
             addLog("Connecté avec l'ID de socket : " + socket.id);
         });
+
+        socket.on("ERROR", data => {
+            alert(`ERROR ${data.code} : ${data.message}`);
+        })
 
         socket.on("disconnect", () => {
             addLog("Déconnecté");
@@ -83,10 +90,12 @@ sendActionBtn.addEventListener("click", () => {
         addLog("Veuillez d'abord vous connecter en cliquant sur 'Envoyer BATTLE_WAITING'.");
         return;
     }
-    const { spellId, accuracy } = getInputValues();
+    const { spellId, accuracy, battleId, userId } = getInputValues();
+    console.log(`USER: ${userId}`)
     const actionData = {
         spellId: spellId,
-        accuracy: accuracy
+        accuracy: accuracy,
+        battleId: battleId
     };
     addLog("Envoi de BATTLE_RECEIVE_ACTION : " + JSON.stringify(actionData));
     socket.emit("BATTLE_RECEIVE_ACTION", actionData);

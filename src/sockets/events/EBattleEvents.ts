@@ -1,4 +1,4 @@
-export enum EBattleActions {
+export enum EBattleEvents {
     // This event is sent by user to say that they are waiting for another player
     BATTLE_WAITING = "BATTLE_WAITING",
     // This event is sent to users so they know that the battle is starting

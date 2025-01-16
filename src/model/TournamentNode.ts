@@ -14,6 +14,14 @@ export default class TournamentNode {
         this._battleId = battleId;
     }
 
+    public serialize(): string {
+        return JSON.stringify({
+            userId: this._userIds,
+            winners: this._winners,
+            status: this._status
+        });
+    }
+
     get userIds(): number[] {
         return this._userIds;
     }

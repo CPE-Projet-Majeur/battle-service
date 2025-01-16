@@ -1,14 +1,12 @@
 import {Server} from "socket.io";
-import {EBattleActions} from "./events/EBattleActions";
+import {EBattleEvents} from "./events/EBattleEvents";
 import SocketWrapper from "./SocketWrapper";
 import battleService from "../services/BattleService";
 import User from "../model/User";
 import BattleService from "../services/BattleService";
 import UserDAO from "../dao/UserDAO";
 import Battle from "../model/Battle";
-import {EEvents} from "./events/EEvents";
-import TournamentService from "../services/TournamentService";
-import Tournament from "../model/Tournament";
+import {ECommonEvents} from "./events/ECommonEvents";
 import {eventBus} from "../bus/eventBus";
 
 type WaitingData = {
@@ -25,6 +23,7 @@ export type BattleStartData = {
 type BattleReceiveData = {
     spellId: number;
     accuracy: number;
+    battleId: number;
 }
 
 export type BattleSendData = {
@@ -40,33 +39,47 @@ export type BattleEndData = {
     status: string | undefined;
 }
 
-// TODO : REWORK
-
 class BattleSocket  {
     public setSocket(io: Server, wrapper: SocketWrapper): void {
-        // Handle connection
-        wrapper.socket.on(EBattleActions.BATTLE_WAITING, (data: WaitingData) => {
+
+        wrapper.socket.on(EBattleEvents.BATTLE_WAITING, (data: WaitingData) => {
             // TODO : handle scenario when user is waiting multiple times
             // if (socketWrapper.battleId != -1) {
             //     console.log(`User ${socketWrapper.userId} is already waiting or in battle`);
             //     return;
             // }
-            console.log("BATTLE_WAITING", data);
+            /////////////////////////// HOOK PLAYER TO A BATTLE //////////////////////////////
             let battleId: number = Number(data.battleId);
             const userId: number = wrapper.userId;
             const weather: number = typeof data.weather !== "undefined" ? data.weather : 0;
-            console.log("BATTLE_WAITING BIS", battleId, userId, weather);
-            const battleExists: boolean = typeof battleId !== "undefined";
-            // Tournament mode : battle already exists
+            const battleExists: boolean = !isNaN(battleId);
+            console.log(`User ${userId} tries to join a battle. battleId is ${battleId}`)
+            // Join a game associated with a tournament
             if (battleExists) {
                 const battle: Battle | undefined = BattleService.getBattle(battleId);
-                if (!battle) return;
-                if (battle.tournamentId == -1) return; // Wrong scenario : battle tried to be joined but has no tournament
+                if (!battle) {
+                    wrapper.socket.emit(ECommonEvents.ERROR, {
+                        code: 1,
+                        message: `Battle of ID ${battleId} not found.`
+                    })
+                    return;
+                }
+                if (battle.tournamentId == -1) {
+                    wrapper.socket.emit(ECommonEvents.ERROR, {
+                        code: 1,
+                        message: `Battle of ID ${battleId} is not associated with a tournament.`
+                    })
+                    return;
+                }
                 wrapper.socket.join(`tournament_${battle.tournamentId}`)
                 console.log(`Battle ID: ${battleId}`);
                 //socketWrapper.tournament = true;
                 if (battleService.handleJoining(userId, battle) == -1) {
                     console.log(`User ${userId} failed to join the battle of id ${battleId}`)
+                    wrapper.socket.emit(ECommonEvents.ERROR, {
+                        code: 4,
+                        message: `Failed to join battle.`
+                    })
                     return;
                 }
                 console.log(`User ${userId} joined the battle of id ${battleId}`);
@@ -76,20 +89,32 @@ class BattleSocket  {
                 battleId = battleService.handleWaiting(userId, weather)
                 if (battleId == -1) {
                     console.log(`User ${userId} failed to wait for a battle`)
+                    wrapper.socket.emit(ECommonEvents.ERROR, {
+                        code: 5,
+                        message: `Failed to wait for battle.`
+                    })
                     return;
                 }
                 console.log(`User ${userId} joined the battle of id ${battleId}`);
             }
-            // Check if battle is ready to start
-            const battle: Battle | undefined = BattleService.getBattle(battleId);
-            if (!battle) return;
             wrapper.battleId = battleId;
+            /////////////////////////// CAN THE BATTLE START ? //////////////////////////////
+            const battle: Battle | undefined = BattleService.getBattle(battleId);
+            if (!battle) {
+                wrapper.socket.emit(ECommonEvents.ERROR, {
+                    code: 1,
+                    message: `Battle of ID ${battleId} not found.`
+                })
+                return;
+            }
             if (battleService.isBattleReady(battle)){
                 console.log(`Battle ID: ${battleId} is starting !`);
                 battleService.getPlayers(battle).forEach(player => {
                     // Send data to battle socket
                     // TODO : Create export type (here, we are sending socket ids !!!)
-                    io.to(player.battleSocketId).emit(EBattleActions.BATTLE_START,
+
+                    // TODO : send to room("user_id")
+                    io.to(player.battleSocketId).emit(EBattleEvents.BATTLE_START,
                         {
                             players: battleService.getPlayers(battle),
                             weather: battleService.getWeather(battle),
@@ -97,7 +122,7 @@ class BattleSocket  {
                         })
                     // Send data to tournament socket
                     if (battleExists) { // TODO : SRP... Battle should not handle tournament logic, use emitBus
-                        io.to(player.tournamentSocketId).emit(EBattleActions.BATTLE_START,
+                        io.to(player.tournamentSocketId).emit(EBattleEvents.BATTLE_START,
                             {
                                 players: battleService.getPlayers(battle),
                                 weather: battleService.getWeather(battle),
@@ -106,16 +131,53 @@ class BattleSocket  {
                     }
                 })
             }
+            else wrapper.socket.emit("WAITING_ACKNOWLEDGED")
         })
-        // Handle actions
-        wrapper.socket.on(EBattleActions.BATTLE_RECEIVE_ACTION, (data: BattleReceiveData) => {
-            // TODO : Handle scenario when player tries to attack without beeing in a game (if !gameReady...)
-            const accuracy: number = data.accuracy;
-            const spellId: number = data.spellId;
+
+        wrapper.socket.on(EBattleEvents.BATTLE_RECEIVE_ACTION, (data: BattleReceiveData) => {
+            const accuracy: number = Number(data.accuracy);
+            const spellId: number = Number(data.spellId);
+            const battleId: number = Number(data.battleId)
+            console.log(`BattleSocket : Received action (spellId : ${spellId}, accuracy : ${accuracy}, battleId: ${battleId}})`)
+            // Error handling
+            if(isNaN(accuracy) || isNaN(spellId) || isNaN(battleId)) {
+                wrapper.socket.emit(ECommonEvents.ERROR, {
+                    code: 1,
+                    message: "Invalid payload parameters."
+                })
+                return;
+            }
+            if(battleId != wrapper.battleId) {
+                wrapper.socket.emit(ECommonEvents.ERROR, {
+                    code: 1,
+                    message: "This user is not fighting in this battle."
+                })
+                return;
+            }
             const battle: Battle | undefined = BattleService.getBattle(wrapper.battleId);
-            if (!battle) return;
+            if (!battle) {
+                wrapper.socket.emit(ECommonEvents.ERROR, {
+                    code: 1,
+                    message: `Battle of ID ${wrapper.battleId} not found.`
+                })
+                return;
+            }
+            if (!BattleService.isBattleReady(battle)) {
+                wrapper.socket.emit(ECommonEvents.ERROR, {
+                    code: 2,
+                    message: "Battle has not started."
+                })
+                return;
+            }
+            if(!BattleService.handleAction(spellId, battle, accuracy, wrapper.userId)) {
+                wrapper.socket.emit(ECommonEvents.ERROR, {
+                    code: 4,
+                    message: "This spell is unknown."
+                });
+                return;
+            }
             console.log(`Received action from user ${wrapper.userId} for battle ${battle.id} : spell ${spellId} / accuracy ${accuracy}`);
-            BattleService.handleAction(spellId, battle, accuracy, wrapper.userId)
+            // Process action
             if (BattleService.isRoundOver(battle)) {
                 // Send new game status to users
                 console.log(`Battle ${battle.id}'s round is over`);
@@ -123,8 +185,8 @@ class BattleSocket  {
                 BattleService.getPlayers(battle).forEach((player: User): void => {
                     const user: User | undefined = UserDAO.getUserById(player.id);
                     if (!user) return;
-                    io.to(user.battleSocketId).emit(EBattleActions.BATTLE_SEND_ACTION, sendData);
-                    if (wrapper.tournament) io.to(user.tournamentSocketId).emit(EBattleActions.BATTLE_RECEIVE_ACTION, sendData);
+                    io.to(user.battleSocketId).emit(EBattleEvents.BATTLE_SEND_ACTION, sendData);
+                    if (wrapper.tournament) io.to(user.tournamentSocketId).emit(EBattleEvents.BATTLE_RECEIVE_ACTION, sendData);
                 })
                 BattleService.newRound(battle);
                 if (battleService.isBattleOver(battle)) {
@@ -134,13 +196,13 @@ class BattleSocket  {
                     results.forEach(resultData => {
                         const user: User | undefined = UserDAO.getUserById(resultData.userId);
                         if (!user) return;
-                        io.to(user.battleSocketId).emit(EBattleActions.BATTLE_OVER, resultData)
-                        if (wrapper.tournament) io.to(user.tournamentSocketId).emit(EBattleActions.BATTLE_OVER, resultData);
+                        io.to(user.battleSocketId).emit(EBattleEvents.BATTLE_OVER, resultData)
+                        if (wrapper.tournament) io.to(user.tournamentSocketId).emit(EBattleEvents.BATTLE_OVER, resultData);
                     })
                     // If battle is part of a tournament, send event to tournament socket
                     if (battle.tournamentId != -1) {
                         console.log(`Notifiying tournament ${battle.tournamentId} is notified.`)
-                        eventBus.emit(EEvents.BRACKET_UPDATE, {
+                        eventBus.emit(ECommonEvents.BRACKET_UPDATE, {
                             battleId: battle.id,
                             winnerIds: battle.winners,
                             tournamentId: battle.tournamentId
@@ -159,7 +221,7 @@ class BattleSocket  {
             if (!battle) return
             if (BattleService.playerDisconnect(battle, socket.userId)) {
                 BattleService.getPlayers(battle).forEach(player => {
-                    io.emit(EBattleActions.BATTLE_OVER, {
+                    io.emit(EBattleEvents.BATTLE_OVER, {
                         userId: player.id,
                         status: "forfeited"
                     })

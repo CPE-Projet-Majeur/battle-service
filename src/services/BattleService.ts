@@ -4,6 +4,7 @@ import SpellDAO from "../dao/SpellDAO";
 import {BattleEndData, BattleSendData} from "../sockets/BattleSocket";
 import UserDAO from "../dao/UserDAO";
 import User from "../model/User";
+import Spell from "../model/Spell";
 
 class BattleService {
 
@@ -72,8 +73,10 @@ class BattleService {
      * @return boolean if the action succeeded
      */
     public handleAction(spellId: number, battle: Battle, accuracy: number, userId: number): boolean {
+        const spell: Spell | undefined = SpellDAO.getSpellById(spellId)
+        if (!spell) return false;
         // @ts-ignore
-        battle.players.get(userId).spell = SpellDAO.getSpellById(spellId)
+        battle.players.get(userId).spell = spell
         // @ts-ignore
         battle.players.get(userId).accuracy = accuracy
         return true;
@@ -169,6 +172,15 @@ class BattleService {
         const result: User[] = [];
         battle.players.forEach(player => {
             if (player) result.push(player.user);
+        })
+        return result;
+    }
+
+    public isPlayerInBattle(battle: Battle, userId: number): boolean {
+        let result: boolean = false;
+        battle.players.forEach(player => {
+            if (!player) return;
+            if (player.user.id === userId) result = true;
         })
         return result;
     }

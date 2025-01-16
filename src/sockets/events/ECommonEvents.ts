@@ -3,7 +3,7 @@ export type ErrorData = {
     message: string
 }
 
-export enum EEvents {
+export enum ECommonEvents {
     BRACKET_UPDATE = 'BRACKET_UPDATE',
     ERROR = "ERROR"
 }

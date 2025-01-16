@@ -20,12 +20,12 @@ export default class Tournament {
         this._name = name;
     }
 
-    public serializeTree(): TournamentNode[][] {
-        const ret : TournamentNode[][] = [];
-        this._tree.forEach((value: TournamentNode[]): void => {
-            ret.push(value);
-        })
-        return ret;
+    public serializeTree(): string {
+        const ret: { [key: string]: any} = {};
+        this._tree.forEach((nodes: TournamentNode[], key: number): void => {
+            ret[key] = nodes.map((node: TournamentNode) => node.serialize());
+        });
+        return JSON.stringify(ret);
     }
 
     get id(): number {

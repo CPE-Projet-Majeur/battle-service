@@ -1,4 +1,4 @@
-export enum ETournamentActions {
+export enum ETournamentEvents {
     // Participants send this event when they try to join a tournament
     TOURNAMENT_JOIN = "TOURNAMENT_JOIN",
     // This event is sent if the tournament was successfully joined
