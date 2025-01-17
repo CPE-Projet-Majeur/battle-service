@@ -36,7 +36,7 @@ export type TournamentParticipant = {
 type BracketStartData = {
     battleId: number;
     userIds: number[];
-    tree: Map<number, TournamentNode[]>;
+    tree: string;
 }
 
 type TournamentEndData = {
@@ -102,8 +102,7 @@ class TournamentSocket {
                     const data: BracketStartData = {
                         battleId : node.battleId,
                         userIds : node.userIds,
-                        //userNames: truc
-                        tree : tournament.tree,
+                        tree : tournament.serializeTree(),
                     }
                     io.to(user.tournamentSocketId).emit(ETournamentEvents.TOURNAMENT_BRACKET_START,data)
                 })
