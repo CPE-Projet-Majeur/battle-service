@@ -72,8 +72,8 @@ class BattleService {
      * @param userId
      * @return boolean if the action succeeded
      */
-    public handleAction(spellId: number, battle: Battle, accuracy: number, userId: number): boolean {
-        const spell: Spell | undefined = SpellDAO.getSpellById(spellId)
+    public async handleAction(spellId: number, battle: Battle, accuracy: number, userId: number): Promise<boolean> {
+        const spell: Spell | undefined = await SpellDAO.getSpellById(spellId)
         if (!spell) return false;
         // @ts-ignore
         battle.players.get(userId).spell = spell

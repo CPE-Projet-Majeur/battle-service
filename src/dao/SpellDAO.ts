@@ -1,25 +1,26 @@
 import AbstractDAO from "./AbstractDAO";
 import Spell from "../model/Spell";
+import axios from "axios";
 
 
 class SpellDAO extends AbstractDAO {
 
-    private static tempData : Spell[] = [
-        new Spell(1, "Aguamenti", 1, 1, 20),
-        new Spell(2, "Ascendio", 1, 1, 20),
-        new Spell(3, "Bombarda", 1, 1, 20),
-        new Spell(4, "Confundo", 1, 1, 20),
-        new Spell(5, "Glacius", 1, 1, 20),
-        new Spell(6, "Incendio", 1, 1, 20),
-        new Spell(7, "Protego", 1, 1, 20),
-        new Spell(8, "Ventus", 1, 1, 200)
-    ]
+    private static API_ADDRESS: string = process.env.SPELL_API_ADDRESS || "http://127.0.0.1:8084/spells";
 
-    public getSpellById(id: number): Spell | undefined {
-        // Fetch from spell service
-        return SpellDAO.tempData.find(spell => spell.id === id);
+    public async getSpellById(id: number): Promise<Spell | undefined> {
+        const url: string = SpellDAO.API_ADDRESS + `/${id}`;
+        try {
+            const response = await axios.get(url);
+            if (response.status === 200) {
+                const data = response.data;
+                return new Spell(data.id, data.name, data.description, data.affinity, data.number, data.damage, data.difficulty);
+            }
+            return undefined;
+        } catch (error) {
+            console.error('Erreur lors de la requête GET:', error);
+            return undefined;
+        }
     }
-
 }
 
 export default new SpellDAO()
