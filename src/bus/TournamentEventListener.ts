@@ -55,7 +55,7 @@ export default class TournamentEventListener {
                         const data = { // : BracketStartData
                             battleId : node.battleId,
                             userIds : node.userIds,
-                            tree : tournament.tree,
+                            tree : tournament.serializeTree(),
                         }
                         // io.to(user.tournamentSocketId).emit(ETournamentEvents.TOURNAMENT_BRACKET_START,data)
                         const roomName = `user_${user.id}`

@@ -47,7 +47,7 @@ class MyApp {
             // Create user if it does not exist
             let user: User | undefined = UserDAO.getUserById(userId);
             if (!user) {
-                user = new User(userId,  userLastName, userFirstName, userHouse);
+                user = new User(userId, userLastName, userFirstName, userHouse);
                 user = UserDAO.save(user);
             }
             // Join room of sockets associated with the user
