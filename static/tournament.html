@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Tournoi</title>
+    <link rel="stylesheet" href="tournament.css">
+</head>
+<body>
+<div class="container">
+    <!-- Section de connexion -->
+    <section id="connectionSection">
+        <h2>Connexion</h2>
+        <input type="number" id="userIdInput" placeholder="Votre userId">
+        <button id="connectButton">Se connecter</button>
+    </section>
+
+    <!-- Section principale (cachée tant que l'utilisateur n'est pas connecté) -->
+    <div id="mainApp" style="display:none;">
+        <h1>Test Tournoi</h1>
+
+        <!-- Section de création de tournoi -->
+        <section>
+            <h2>Créer un tournoi</h2>
+            <input type="text" id="tournamentName" placeholder="Nom du tournoi">
+            <button id="createTournament">Créer</button>
+            <div id="createTournamentResult"></div>
+        </section>
+
+        <!-- Section de rejoindre un tournoi -->
+        <section>
+            <h2>Rejoindre un tournoi</h2>
+            <input type="text" id="tournamentCode" placeholder="Code du tournoi">
+            <button id="joinTournament">Rejoindre</button>
+            <div id="joinTournamentResult"></div>
+        </section>
+
+        <!-- Section de démarrage du tournoi -->
+        <section>
+            <h2>Démarrer le tournoi</h2>
+            <input type="number" id="tournamentId" placeholder="ID du tournoi">
+            <button id="startTournament">Démarrer</button>
+            <div id="startTournamentResult"></div>
+        </section>
+
+        <!-- Section d'actualisation (update) du tournoi -->
+        <section>
+            <h2>Mise à jour du tournoi</h2>
+            <input type="number" id="updateTournamentId" placeholder="ID du tournoi">
+            <button id="updateTournament">Mettre à jour</button>
+            <div id="updateTournamentResult"></div>
+        </section>
+
+        <!-- Section d'affichage des événements -->
+        <section>
+            <h2>Logs</h2>
+            <div id="logs"></div>
+        </section>
+    </div>
+</div>
+
+<!-- Inclus Socket.IO -->
+<script src="/socket.io/socket.io.js"></script>
+<script src="tournament.js"></script>
+</body>
+</html>
