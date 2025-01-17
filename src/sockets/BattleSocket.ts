@@ -123,7 +123,7 @@ class BattleSocket  {
             else wrapper.socket.emit("WAITING_ACKNOWLEDGED")
         })
 
-        wrapper.socket.on(EBattleEvents.BATTLE_RECEIVE_ACTION, (data: BattleReceiveData) => {
+        wrapper.socket.on(EBattleEvents.BATTLE_RECEIVE_ACTION, async (data: BattleReceiveData) => {
             const accuracy: number = Number(data.accuracy);
             const spellId: number = Number(data.spellId);
             const battleId: number = Number(data.battleId)
@@ -158,7 +158,15 @@ class BattleSocket  {
                 })
                 return;
             }
-            if(!BattleService.handleAction(spellId, battle, accuracy, wrapper.userId)) {
+            // if(!BattleService.handleAction(spellId, battle, accuracy, wrapper.userId)) {
+            //     wrapper.socket.emit(ESharedEvents.ERROR, {
+            //         code: 4,
+            //         message: "This spell is unknown."
+            //     });
+            //     return;
+            // }
+            const actionResult : boolean = await BattleService.handleAction(spellId, battle, accuracy, wrapper.userId);
+            if (!actionResult) {
                 wrapper.socket.emit(ESharedEvents.ERROR, {
                     code: 4,
                     message: "This spell is unknown."

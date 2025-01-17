@@ -3,12 +3,13 @@ import express, {Express} from 'express';
 import {createServer} from 'http';
 import {Server} from "socket.io";
 import BattleSocket from "./sockets/BattleSocket";
-import TournamentSocket from "./sockets/tournamentSocket";
+import TournamentSocket from "./sockets/TournamentSocket";
 import SocketWrapper from "./sockets/SocketWrapper";
 import User from "./model/User";
 import path = require("path");
 import UserDAO from "./dao/UserDAO";
 import TournamentEventListener from "./bus/TournamentEventListener";
+require('dotenv').config();
 
 class MyApp {
     //private readonly PORT: number = CONFIG.port;

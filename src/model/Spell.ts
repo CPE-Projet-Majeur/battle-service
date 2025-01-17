@@ -4,16 +4,20 @@ import {EType} from "./enums/EType";
 export default class Spell{
     private _id: number;
     private _name: string;
+    private _description: string;
     private _affinity: EAffinity;
     private _type: EType;
     private _damage: number;
+    private _difficulty: number;
 
-    constructor(id: number, name: string, affinity: number, type: number, damage: number) {
+    constructor(id: number, name: string, description: string, affinity: number, type: number, damage: number, difficulty: number) {
         this._id = id;
         this._name = name;
+        this._description = description;
         this._affinity = Object.values(EAffinity).includes(affinity) ? (affinity as EAffinity): EAffinity.FIRE;
         this._type = Object.values(EType).includes(type) ? (type as EType) : EType.ATTACK;
         this._damage = damage;
+        this._difficulty = difficulty;
     }
 
     get id(): number {
@@ -54,5 +58,21 @@ export default class Spell{
 
     set damage(value: number) {
         this._damage = value;
+    }
+
+    get description(): string {
+        return this._description;
+    }
+
+    set description(value: string) {
+        this._description = value;
+    }
+
+    get difficulty(): number {
+        return this._difficulty;
+    }
+
+    set difficulty(value: number) {
+        this._difficulty = value;
     }
 }

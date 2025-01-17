@@ -2,7 +2,7 @@ import TournamentNode from "../model/TournamentNode";
 import Tournament from "../model/Tournament";
 import TournamentDAO from "../dao/TournamentDAO";
 import BattleService from "./BattleService";
-import {TournamentParticipant} from "../sockets/tournamentSocket";
+import {TournamentParticipant} from "../sockets/TournamentSocket";
 import UserDAO from "../dao/UserDAO";
 import User from "../model/User";
 

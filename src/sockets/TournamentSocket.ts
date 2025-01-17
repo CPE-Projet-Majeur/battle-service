@@ -1,5 +1,4 @@
 import {Server, Socket} from "socket.io";
-import eventBus from "../bus/TournamentEventListener";
 import {ESharedEvents} from "./events/ESharedEvents";
 import {ETournamentEvents} from "./events/ETournamentEvents";
 import SocketWrapper from "./SocketWrapper";
@@ -9,7 +8,6 @@ import UserDAO from "../dao/UserDAO";
 import User from "../model/User";
 import TournamentNode from "../model/TournamentNode";
 import userDAO from "../dao/UserDAO";
-import TournamentDAO from "../dao/TournamentDAO";
 
 type BracketUpdateDate = {
     battleId: number;
