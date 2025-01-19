@@ -37,10 +37,6 @@ type BracketStartData = {
     tree: string;
 }
 
-type TournamentEndData = {
-    winnersIds: number[];
-}
-
 class TournamentSocket {
 
     public setSocket(io: Server, wrapper: SocketWrapper) {

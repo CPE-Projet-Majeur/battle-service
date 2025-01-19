@@ -4,7 +4,7 @@
   "description": "A battle service for our project",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "build": "tsc",
     "dev": "tsc && node dist/index.js"
   },
@@ -19,13 +19,16 @@
   },
   "homepage": "https://github.com/CPE-Projet-Majeur/battle-service#readme",
   "dependencies": {
+    "@types/jest": "^29.5.14",
     "axios": "^1.7.9",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "socket.io": "^4.8.1",
+    "ts-jest": "^29.2.5",
     "typescript": "^5.7.3"
   },
   "devDependencies": {
-    "@types/express": "^5.0.0"
+    "@types/express": "^5.0.0",
+    "jest": "^29.7.0"
   }
 }

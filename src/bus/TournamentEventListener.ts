@@ -18,10 +18,8 @@ type BracketUpdateDate = {
  * Sets the eventBus for communication between battleService/Socket and Tournament
  */
 export default class TournamentEventListener {
-    private _io: Server;
 
-    constructor(io:Server) {
-        this._io = io;
+    constructor(io: Server) {
         eventBus.on(ESharedEvents.BRACKET_UPDATE, (data: BracketUpdateDate)=> {
             console.log(`EVENT LISTENER : Battle ${data.battleId} updated for tournament ${data.tournamentId}'s current bracket!`);
             const tournament: Tournament | undefined = TournamentService.getTournament(data.tournamentId);
@@ -32,8 +30,10 @@ export default class TournamentEventListener {
             // If tournament is over
             if(TournamentService.isTournamentOver(tournament)) {
                 console.log(`Tournament ${tournament.id} is over ! Winners : ${tournament.winners}`)
-                //this._io.emit(ETournamentEvents.TOURNAMENT_OVER, {winnersIds: tournament.winners });
-                io.to(roomName).emit(ETournamentEvents.TOURNAMENT_OVER, {winnersIds: tournament.winners });
+                io.to(roomName).emit(ETournamentEvents.TOURNAMENT_OVER, {
+                    winnersIds: tournament.winners,
+                    tree: tournament.serializeTree()
+                });
                 return
             }
             // Else, if current bracket is over
@@ -57,7 +57,6 @@ export default class TournamentEventListener {
                             userIds : node.userIds,
                             tree : tournament.serializeTree(),
                         }
-                        // io.to(user.tournamentSocketId).emit(ETournamentEvents.TOURNAMENT_BRACKET_START,data)
                         const roomName = `user_${user.id}`
                         console.log(`Sending to sockets in room ${roomName}`) // Non tournament socket linked to users will also receive it...
                         io.to(roomName).emit(ETournamentEvents.TOURNAMENT_BRACKET_START,data);

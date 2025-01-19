@@ -55,13 +55,13 @@ export default class User {
         this._house = value;
     }
 
-    get battleSocketId(): string {
-        return this._battleSocketId;
-    }
-
-    set battleSocketId(value: string) {
-        this._battleSocketId = value;
-    }
+    // get battleSocketId(): string {
+    //     return this._battleSocketId;
+    // }
+    //
+    // set battleSocketId(value: string) {
+    //     this._battleSocketId = value;
+    // }
 
     get tournamentSocketId(): string {
         return this._tournamentSocketId;

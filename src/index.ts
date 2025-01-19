@@ -58,13 +58,13 @@ class MyApp {
             if (type == 'tournament') {
                 console.log(`Received ${userId} connected for a tournament`);
                 TournamentSocket.setSocket(this.io, wrapper);
-                user.tournamentSocketId = socket.id;
+                //user.tournamentSocketId = socket.id;
             }
             BattleSocket.setSocket(this.io, wrapper);
-            user.battleSocketId = socket.id;
+            //user.battleSocketId = socket.id;
             // Handle disconnection
             socket.on('disconnect', () => {
-                console.log(`Disconnected from ${socket.id}`);
+                console.log(`Disconnected (User ${user.id}`);
                 if (type == 'tournament') TournamentSocket.handleDisconnect()
                 BattleSocket.handleDisconnect(this.io, wrapper)
             })
