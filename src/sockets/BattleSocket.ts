@@ -8,6 +8,7 @@ import UserDAO from "../dao/UserDAO";
 import Battle from "../model/Battle";
 import {ESharedEvents} from "./events/ESharedEvents";
 import {eventBus} from "../bus/eventBus";
+import Player from "../model/Player";
 
 type WaitingData = {
     battleId: number;
@@ -98,7 +99,15 @@ class BattleSocket  {
                     console.log(`User ${userId} failed to wait for a battle`)
                     wrapper.socket.emit(ESharedEvents.ERROR, {
                         code: 5,
-                        message: `Failed to wait for battle.`
+                        message: `User not found.`
+                    })
+                    return;
+                }
+                if (battleId == -2) {
+                    console.log(`User ${userId} failed to wait for a battle`)
+                    wrapper.socket.emit(ESharedEvents.ERROR, {
+                        code: 5,
+                        message: `User is already waiting for another battle.`
                     })
                     return;
                 }
@@ -166,11 +175,32 @@ class BattleSocket  {
                 })
                 return;
             }
-            const actionResult : boolean = await BattleService.handleAction(spellId, battle, accuracy, wrapper.userId);
-            if (!actionResult) {
+            const actionResult : number = await BattleService.handleAction(spellId, battle, accuracy, wrapper.userId);
+            if (actionResult == -1) {
+                wrapper.socket.emit(ESharedEvents.ERROR, {
+                    code: 4,
+                    message: "The battle has not started yet."
+                });
+                return;
+            }
+            else if (actionResult == -2) {
                 wrapper.socket.emit(ESharedEvents.ERROR, {
                     code: 4,
                     message: "This spell is unknown."
+                });
+                return;
+            }
+            else if (actionResult == -3) {
+                wrapper.socket.emit(ESharedEvents.ERROR, {
+                    code: 4,
+                    message: "The player could not be found."
+                });
+                return;
+            }
+            else if (actionResult != 1){
+                wrapper.socket.emit(ESharedEvents.ERROR, {
+                    code: 4,
+                    message: "Unknown error."
                 });
                 return;
             }
@@ -212,22 +242,7 @@ class BattleSocket  {
     }
 
     handleDisconnect(io: Server, socket: SocketWrapper): void {
-        // Si l'user se déconnecte, la partie est annulée
-
-        // TODO : Au lieu de socket.battleId, on fetch user avec UserDAO.
-        //  User modele doit avoir un battleId sur l'id courant.
-        if (socket.battleId != -1){
-            const battle: Battle | undefined = BattleService.getBattle(socket.battleId);
-            if (!battle) return
-            if (BattleService.playerDisconnect(battle, socket.userId)) {
-                BattleService.getPlayers(battle).forEach(player => {
-                    io.emit(EBattleEvents.BATTLE_OVER, {
-                        userId: player.id,
-                        status: "forfeited"
-                    })
-                });
-            }
-        }
+        BattleService.handleDisconnect(socket.userId);
     }
 }
 

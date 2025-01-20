@@ -3,6 +3,7 @@ import {EWeather} from "./enums/EWeather";
 
 export default class User {
     private _id:number;
+    private _battleId: number = -1;
     private _lastName: string;
     private _firstName: string;
     // private login: string;
@@ -69,5 +70,13 @@ export default class User {
 
     set tournamentSocketId(value: string) {
         this._tournamentSocketId = value;
+    }
+
+    get battleId(): number {
+        return this._battleId;
+    }
+
+    set battleId(value: number) {
+        this._battleId = value;
     }
 }

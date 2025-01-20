@@ -34,17 +34,20 @@ class BattleService {
         // If game is available to join
         const user: User | undefined = UserDAO.getUserById(id);
         if (!user) return -1;
+        if (user.battleId != -1) return -2;
         // Find a suitable battle to join
         for(let i: number = 0; i < this._waitingPlayersId.length; i ++){
             const battle: Battle = this._waitingPlayersId[i];
             if(battle.players.size <= BattleService.PLAYER_COUNT) {
                 battle.addPlayer(user);
+                user.battleId = battle.id;
                 return battle.id;
             }
         }
         // Else, create game for others to join
         const battle: Battle = BattleDAO.save(new Battle(-1, -1, weather))
         battle.addPlayer(user);
+        user.battleId = battle.id;
         this._waitingPlayersId.push(battle);
         return battle.id;
     }
@@ -72,25 +75,39 @@ class BattleService {
      * @param battle
      * @param accuracy
      * @param userId
-     * @return boolean if the action succeeded
+     * @return error code or 1 if handling was successful
      */
-    public async handleAction(spellId: number, battle: Battle, accuracy: number, userId: number): Promise<boolean> {
-        const spell: Spell | undefined = await SpellDAO.getSpellById(spellId)
-        if (!spell || spell.name === undefined) return false;
+    public async handleAction(spellId: number, battle: Battle, accuracy: number, userId: number): Promise<number> {
+        if(!this.isBattleReady(battle)) return -1;
         const player: Player | undefined | null = battle.players.get(userId);
-        if (!player) return false;
+        if (!player) return -3;
+        const spell: Spell | undefined = await SpellDAO.getSpellById(spellId)
+        if (!spell || spell.name === undefined) return -2;
         player.spell = spell;
         player.accuracy = accuracy;
         if(spell.type == EType.DEFENCE) player.defenseMultiplier = 1 - (spell.damage / 100);
         if(spell.type == EType.HEAL) player.hp += spell.damage;
         // if(spell AILEMNT ALL OTHER PLAYERS HAVE MINUS ON ACCURACY)
-        return true;
+        return 1;
     }
 
     public handleBattleStart(battle: Battle): void {
         this.newRound(battle);
         const index: number = this._waitingPlayersId.indexOf(battle);
         this._waitingPlayersId.splice(index, 1);
+    }
+
+    public handleDisconnect(userId: number): void {
+        const user: User | undefined = UserDAO.getUserById(userId);
+        if (!user) return;
+        if (user.battleId == -1) return;
+        const battle: Battle | undefined = BattleDAO.getBattleById(user.battleId);
+        if (!battle) return;
+        battle.players.forEach((player: Player | null) => {
+            if(!player) return;
+            if(player.user.id == user.id) player.status = "forfeited";
+        })
+        user.battleId = -1;
     }
 
     /**
@@ -103,16 +120,16 @@ class BattleService {
         // Compute damage dealt by each player
         battle.players.forEach(player => {
             if(!player) return;
-            if(player.status == "defeated") return;
+            if(this.isPlayerAlive(player)) return;
             if(!player.spell) return;
-            if(player.spell.type == EType.ATTACK) return;
+            if(player.spell.type != EType.ATTACK) return;
             const affinityRecord : Record<EAffinity, number> = BattleProcessor.affinityMultipliers[player.spell.affinity];
             const houseMultiplier : 1.5 | 1 = BattleProcessor.houseAffinities[player.user.house as EHouse] == player.spell.affinity ? 1.5 : 1;
             const baseDamage : number = player.spell.damage * player.accuracy;
             // All enemies are attacked
             battle.players.forEach(target => {
                 if (!target) return;
-                if (target.status == "defeated") return;
+                if (this.isPlayerAlive(target)) return;
                 if (target.user.id === player.user.id) return;
                 if (!target.spell) return;
                 // if same team, pass
@@ -207,11 +224,15 @@ class BattleService {
 
     public isBattleOver(battle: Battle): boolean {
         let numberFighting: number = battle.players.size;
-        battle.players.forEach(player => {
+        battle.players.forEach((player: Player | null) => {
             if (!player) return;
-            if (player.status == "defeated") numberFighting--;
+            if (this.isPlayerAlive(player)) numberFighting--;
         })
         return numberFighting <= BattleService.TEAM_SIZE;
+    }
+
+    private isPlayerAlive(player: Player): boolean {
+        return player.status != "alive";
     }
 
     public isPlayerInBattle(battle: Battle, userId: number): boolean {
