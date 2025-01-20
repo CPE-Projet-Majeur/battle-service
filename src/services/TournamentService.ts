@@ -23,7 +23,6 @@ class TournamentService {
         const user: User | undefined = UserDAO.getUserById(userId);
         if (!user) return null;
         tournament.usersId.push(userId);
-        tournament.users.push(user);
         return tournament;
     }
 
@@ -131,6 +130,10 @@ class TournamentService {
             })
         })
         return participants;
+    }
+
+    public handleDisconnect() {
+        // If tournament not started, remove user from tournament and warn others
     }
 
     public deleteTournament(tournament: Tournament): boolean {

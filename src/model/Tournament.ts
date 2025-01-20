@@ -7,7 +7,7 @@ export default class Tournament {
     private _name: string;
     private _active: boolean = false;
     private _usersId: number[] = [];
-    private _users: User[] = []
+    //private _users: User[] = []
     private _tree: Map<number, TournamentNode[]> = new Map();
     private _currentBracket: number = 0;
     private _winners: number[] = [];
@@ -21,9 +21,9 @@ export default class Tournament {
     }
 
     public serializeTree(): string {
-        const ret: { [key: string]: any} = {};
-        this._tree.forEach((nodes: TournamentNode[], key: number): void => {
-            ret[key] = nodes.map((node: TournamentNode) => node.serialize());
+        const ret: { [key: string]: string[]} = {};
+        this._tree.forEach((value: TournamentNode[], key: number): void => {
+            ret[key] = value.map((node: TournamentNode) => node.serialize());
         });
         return JSON.stringify(ret);
     }
@@ -88,11 +88,11 @@ export default class Tournament {
         this._winners = value;
     }
 
-    get users(): User[] {
-        return this._users;
-    }
-
-    set users(value: User[]) {
-        this._users = value;
-    }
+    // get users(): User[] {
+    //     return this._users;
+    // }
+    //
+    // set users(value: User[]) {
+    //     this._users = value;
+    // }
 }

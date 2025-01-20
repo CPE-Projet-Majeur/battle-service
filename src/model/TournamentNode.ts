@@ -1,3 +1,6 @@
+import User from "./User";
+import UserDAO from "../dao/UserDAO";
+
 export default class TournamentNode {
     private _userIds: number[] = []; // WARNING : This prevents the GC from erasing the user
     private _winners: number[] = [];
@@ -15,8 +18,16 @@ export default class TournamentNode {
     }
 
     public serialize(): string {
+        // VERY UGLY TO DO THAT THERE => REWORD ARCHITECTURE SO THAT USERSNAMES ARE STORED IN ATTRIBUTES
+        const userNames: string[] = [];
+        this._userIds.forEach((id: number) => {
+            const user: User | undefined = UserDAO.getUserById(id);
+            if (!user) return null;
+            userNames.push(user.firstName);
+        })
         return JSON.stringify({
             userId: this._userIds,
+            userNames: userNames,
             winners: this._winners,
             status: this._status
         });
