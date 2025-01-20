@@ -10,14 +10,32 @@ export default class Spell{
     private _damage: number;
     private _difficulty: number;
 
-    constructor(id: number, name: string, description: string, affinity: number, type: number, damage: number, difficulty: number) {
+    constructor(id: number, name: string, description: string, affinity: string, type: string, damage: number, difficulty: number) {
         this._id = id;
         this._name = name;
         this._description = description;
-        this._affinity = Object.values(EAffinity).includes(affinity) ? (affinity as EAffinity): EAffinity.FIRE;
-        this._type = Object.values(EType).includes(type) ? (type as EType) : EType.ATTACK;
+        this._affinity = this.parseAffinity(affinity);
+        this._type = this.parseType(type);
         this._damage = damage;
         this._difficulty = difficulty;
+    }
+
+    private parseAffinity(affinity: string): EAffinity {
+        if (!affinity) {
+            console.warn(`Affinity is missing or undefined, defaulting to FIRE`);
+            return EAffinity.FIRE;
+        }
+        const formattedAffinity = affinity.toUpperCase(); // Convertir en majuscules pour correspondre aux enums
+        return (EAffinity as any)[formattedAffinity] ?? EAffinity.FIRE;
+    }
+
+    private parseType(type: string): EType {
+        if (!type) {
+            console.warn(`Type is missing or undefined, defaulting to ATTACK`);
+            return EType.ATTACK;
+        }
+        const formattedType = type.toUpperCase();
+        return (EType as any)[formattedType] ?? EType.ATTACK;
     }
 
     get id(): number {

@@ -5,6 +5,11 @@ import {BattleEndData, BattleSendData} from "../sockets/BattleSocket";
 import UserDAO from "../dao/UserDAO";
 import User from "../model/User";
 import Spell from "../model/Spell";
+import {BattleProcessor} from "./BattleAffinityProcessor";
+import {EAffinity} from "../model/enums/EAffinity";
+import {EHouse} from "../model/enums/EHouse";
+import {EType} from "../model/enums/EType";
+import Player from "../model/Player";
 
 class BattleService {
 
@@ -17,19 +22,25 @@ class BattleService {
         return BattleDAO.getBattleById(battleId);
     }
 
+    //////////////////// HANDLING EVENTS METHODS ////////////////////
+
     /**
-     * Handles joining a battle out of a tournament
-     * @param id
+     * Handles joining a random battle in an arena.
+     * @param id userId
      * @param weather
+     * @return The ID of the battle the waiting player has joined, -1 is failure
      */
     public handleWaiting(id : number, weather: number): number {
         // If game is available to join
         const user: User | undefined = UserDAO.getUserById(id);
         if (!user) return -1;
-        if (this._waitingPlayersId.length >= 1 ) {
-            const battle: Battle = this._waitingPlayersId.pop()!;
-            battle.addPlayer(user);
-            return battle.id;
+        // Find a suitable battle to join
+        for(let i: number = 0; i < this._waitingPlayersId.length; i ++){
+            const battle: Battle = this._waitingPlayersId[i];
+            if(battle.players.size <= BattleService.PLAYER_COUNT) {
+                battle.addPlayer(user);
+                return battle.id;
+            }
         }
         // Else, create game for others to join
         const battle: Battle = BattleDAO.save(new Battle(-1, -1, weather))
@@ -40,16 +51,137 @@ class BattleService {
 
     /**
      * Handles joining a tournament's battle.
-     * @param id
-     * @param battle
+     * @param id UserId
+     * @param battle Battle
+     * @returns An Integer :
+     * - the Id of the battle if joining it was successful
+     * - -1 if the user could not be found
+     * - -2 if the user is not part of the battle
      */
     public handleJoining(id: number, battle: Battle): number{
         const user: User | undefined = UserDAO.getUserById(id);
         if (!user) return -1
-        if (!battle.players.has(id)) return -1; // Player not allowed in this pre-made battle
+        if (!battle.players.has(user.id)) return -2; // Player not allowed in this pre-made battle
         battle.addPlayer(user);
         return battle.id;
     }
+
+    /**
+     *
+     * @param spellId
+     * @param battle
+     * @param accuracy
+     * @param userId
+     * @return boolean if the action succeeded
+     */
+    public async handleAction(spellId: number, battle: Battle, accuracy: number, userId: number): Promise<boolean> {
+        const spell: Spell | undefined = await SpellDAO.getSpellById(spellId)
+        if (!spell || spell.name === undefined) return false;
+        const player: Player | undefined | null = battle.players.get(userId);
+        if (!player) return false;
+        player.spell = spell;
+        player.accuracy = accuracy;
+        if(spell.type == EType.DEFENCE) player.defenseMultiplier = 1 - (spell.damage / 100);
+        if(spell.type == EType.HEAL) player.hp += spell.damage;
+        if(spell)
+        return true;
+    }
+
+    public handleBattleStart(battle: Battle): void {
+        this.newRound(battle);
+        const index: number = this._waitingPlayersId.indexOf(battle);
+        this._waitingPlayersId.splice(index, 1);
+    }
+
+    /**
+     * Process user actions for a game where players act at the same time.
+     * Defeated users are removed from the match.
+     * @param battle
+     */
+    public processActions(battle: Battle): BattleSendData[] {
+        const result: BattleSendData[] = [];
+        // Compute damage dealt by each player
+        battle.players.forEach(player => {
+            if(!player) return;
+            if(player.status == "defeated") return;
+            if(!player.spell) return;
+            if(player.spell.type == EType.ATTACK) return;
+            const affinityRecord : Record<EAffinity, number> = BattleProcessor.affinityMultipliers[player.spell.affinity];
+            const houseMultiplier : 1.5 | 1 = BattleProcessor.houseAffinities[player.user.house as EHouse] == player.spell.affinity ? 1.5 : 1;
+            const baseDamage : number = player.spell.damage * player.accuracy;
+            // All enemies are attacked
+            battle.players.forEach(target => {
+                if (!target) return;
+                if (target.status == "defeated") return;
+                if (target.user.id === player.user.id) return;
+                if (!target.spell) return;
+                // if same team, pass
+                const typeMultiplier: number = affinityRecord[target.spell.affinity];
+                const finalDamage: number = Math.round(baseDamage * typeMultiplier * houseMultiplier);
+                console.log(`user ${player.user.id} targeting user ${target.user.id} => typeMultiplier: ${typeMultiplier}, houseMultiplier: ${houseMultiplier}`);
+
+                target.hp = Math.max(0, target.hp - finalDamage);
+                result.push({
+                    targetId: target.user.id,
+                    damage: finalDamage,
+                    accuracy: player.accuracy,
+                    // @ts-ignore
+                    spellName: player.spell.name,
+                    remainingHp: target.hp
+                })
+            })
+        })
+        battle.players.forEach(player => {
+            if(!player) return;
+            if(player.hp <= 0) player.status = "defeated";
+        })
+        return result
+    }
+
+    //////////////////// ROUND PROCESSING METHODS /////////////////////
+
+    public processWinners(battle: Battle): BattleEndData[] {
+        if (!this.isBattleOver(battle)) return [];
+        // Compute winners
+        let highestDamage: number = 0;
+        let highestDamagePlayerId: number = 0;
+        battle.players.forEach(player => {
+            if (!player) return;
+            if (player.status != "defeated") battle.winners.push(player.user.id)
+            else if (player.damage > highestDamage) {
+                highestDamage = player.damage;
+                highestDamagePlayerId = player.user.id;
+            }
+        })
+        // Handle draw the best we can for now
+        if(battle.winners.length == 0){
+            console.log(`Battle of ID ${battle.id} resulted in a draw. Winners are decided over highestDamage.`)
+            battle.winners.push(highestDamagePlayerId);
+        }
+        // TODO : check that winners.length < NUMBER OF PLAYERS THAT CAN WIN
+        // Prepare data
+        const data: BattleEndData[] = []
+        battle.players.forEach(player => {
+            if (!player) return;
+            data.push({
+                userId: player.user.id,
+                status: battle.winners.includes(player.user.id) ? "won" : player.status,
+            })
+        })
+        return data;
+    }
+
+    public newRound(battle: Battle) : boolean {
+        battle.players.forEach(player => {
+            if (!player) return;
+            player.spell = null
+            player.damage = 0;
+        });
+        battle.round ++;
+        return true;
+    }
+
+    //////////////////// BOOLEAN METHODS ////////////////////
 
     /**
      * Check if a given battle is ready
@@ -64,78 +196,6 @@ class BattleService {
         //return battle.players.size == BattleService.PLAYER_COUNT;
     }
 
-    /**
-     *
-     * @param spellId
-     * @param battle
-     * @param accuracy
-     * @param userId
-     * @return boolean if the action succeeded
-     */
-    public async handleAction(spellId: number, battle: Battle, accuracy: number, userId: number): Promise<boolean> {
-        const spell: Spell | undefined = await SpellDAO.getSpellById(spellId)
-        if (!spell) return false;
-        // @ts-ignore
-        battle.players.get(userId).spell = spell
-        // @ts-ignore
-        battle.players.get(userId).accuracy = accuracy
-        return true;
-    }
-
-    /**
-     * Process user actions for a game where players act at the same time.
-     * Defeated users are removed from the match.
-     * @param battle
-     */
-    public processActions(battle: Battle): BattleSendData[] {
-        const result: BattleSendData[] = [];
-        battle.players.forEach(player => {
-            if (!player) return;
-            // final : damage * affinité de type par rapport à maison * météo
-            if (!player.spell) return;
-            const damage : number = player.spell.damage * player.accuracy;
-            battle.players.forEach(target => {
-                if (!target) return;
-                // If same team, return
-                if (target.user.id === player.user.id) return
-                target.hp = target.hp - damage;
-                if (target.hp <= 0 ) target.status = "defeated";
-                result.push({
-                    targetId: target.user.id,
-                    damage: damage,
-                    accuracy: player.accuracy,
-                    // @ts-ignore
-                    spellName: player.spell.name,
-                    remainingHp: target.hp
-                })
-            })
-        })
-        return result
-    }
-
-    public processWinners(battle: Battle): BattleEndData[] {
-        if (!this.isBattleOver(battle)) return [];
-        // Compute winners
-        battle.players.forEach(player => {
-            if (!player) return;
-            if (player.status != "defeated") battle.winners.push(player.user.id);
-        })
-        const draw: boolean = battle.winners.length == 0;
-        // TODO : check that winners.length < NUMBER OF PLAYERS THAT CAN WIN
-        // Prepare data
-        const data: BattleEndData[] = []
-        battle.players.forEach(player => {
-            if (!player) return;
-            let status : string = player.status;
-            if (battle.winners.includes(player.user.id)) status = "won";
-            data.push({
-                userId: player.user.id,
-                status: draw ? "draw" : status
-            })
-        })
-        return data;
-    }
-
     public isRoundOver(battle: Battle): boolean {
         let ret : boolean = true;
         battle.players.forEach(player => {
@@ -143,15 +203,6 @@ class BattleService {
             if (!player.spell) ret = false;
         })
         return ret;
-    }
-
-    public newRound(battle: Battle) : boolean {
-        battle.players.forEach(player => {
-            if (!player) return;
-            player.spell = null
-        });
-        battle.round ++;
-        return true;
     }
 
     public isBattleOver(battle: Battle): boolean {
@@ -163,19 +214,21 @@ class BattleService {
         return numberFighting <= BattleService.TEAM_SIZE;
     }
 
-    public getPlayers(battle: Battle): User[]{
-        const result: User[] = [];
-        battle.players.forEach(player => {
-            if (player) result.push(player.user);
-        })
-        return result;
-    }
-
     public isPlayerInBattle(battle: Battle, userId: number): boolean {
         let result: boolean = false;
         battle.players.forEach(player => {
             if (!player) return;
             if (player.user.id === userId) result = true;
+        })
+        return result;
+    }
+
+    ///////////////////////// GETTERS /////////////////////////////
+
+    public getPlayers(battle: Battle): User[]{
+        const result: User[] = [];
+        battle.players.forEach(player => {
+            if (player) result.push(player.user);
         })
         return result;
     }

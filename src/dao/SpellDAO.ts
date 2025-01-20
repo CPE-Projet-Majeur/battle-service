@@ -13,7 +13,7 @@ class SpellDAO extends AbstractDAO {
             const response = await axios.get(url);
             if (response.status === 200) {
                 const data = response.data;
-                return new Spell(data.id, data.name, data.description, data.affinity, data.number, data.damage, data.difficulty);
+                return new Spell(data.id, data.name, data.description, data.type, data.affinity, data.damage, data.difficulty);
             }
             return undefined;
         } catch (error) {

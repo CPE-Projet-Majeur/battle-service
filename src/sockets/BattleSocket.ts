@@ -74,11 +74,18 @@ class BattleSocket  {
                 wrapper.socket.join(`tournament_${battle.tournamentId}`)
                 console.log(`Battle ID: ${battleId}`);
                 //socketWrapper.tournament = true;
-                if (battleService.handleJoining(userId, battle) == -1) {
-                    console.log(`User ${userId} failed to join the battle of id ${battleId}`)
+                const joining: number = battleService.handleJoining(userId, battle);
+                if (joining == -1) {
                     wrapper.socket.emit(ESharedEvents.ERROR, {
                         code: 4,
-                        message: `Failed to join battle.`
+                        message: `Failed to join battle : user not found.`
+                    })
+                    return;
+                }
+                if (joining == -2) {
+                    wrapper.socket.emit(ESharedEvents.ERROR, {
+                        code: 4,
+                        message: `Failed to join battle : user not allowed in this battle.`
                     })
                     return;
                 }
@@ -107,8 +114,9 @@ class BattleSocket  {
                 })
                 return;
             }
-            if (battleService.isBattleReady(battle)){
+            if (BattleService.isBattleReady(battle)){
                 console.log(`Battle ID: ${battleId} is starting !`);
+                BattleService.handleBattleStart(battle);
                 const players: User[] = BattleService.getPlayers(battle);
                 const weather: number = BattleService.getWeather(battle);
                 players.forEach((user: User) => {
@@ -158,13 +166,6 @@ class BattleSocket  {
                 })
                 return;
             }
-            // if(!BattleService.handleAction(spellId, battle, accuracy, wrapper.userId)) {
-            //     wrapper.socket.emit(ESharedEvents.ERROR, {
-            //         code: 4,
-            //         message: "This spell is unknown."
-            //     });
-            //     return;
-            // }
             const actionResult : boolean = await BattleService.handleAction(spellId, battle, accuracy, wrapper.userId);
             if (!actionResult) {
                 wrapper.socket.emit(ESharedEvents.ERROR, {
