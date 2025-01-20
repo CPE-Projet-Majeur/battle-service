@@ -25,19 +25,22 @@ class BattleService {
     //////////////////// HANDLING EVENTS METHODS ////////////////////
 
     /**
-     * Handles joining a battle out of a tournament
+     * Handles joining a random battle in an arena.
      * @param id userId
      * @param weather
-     * @return The ID of the battle the waiting player has joined
+     * @return The ID of the battle the waiting player has joined, -1 is failure
      */
     public handleWaiting(id : number, weather: number): number {
         // If game is available to join
         const user: User | undefined = UserDAO.getUserById(id);
         if (!user) return -1;
-        if (this._waitingPlayersId.length >= 1 ) {
-            const battle: Battle = this._waitingPlayersId.pop()!;
-            battle.addPlayer(user);
-            return battle.id;
+        // Find a suitable battle to join
+        for(let i: number = 0; i < this._waitingPlayersId.length; i ++){
+            const battle: Battle = this._waitingPlayersId[i];
+            if(battle.players.size <= BattleService.PLAYER_COUNT) {
+                battle.addPlayer(user);
+                return battle.id;
+            }
         }
         // Else, create game for others to join
         const battle: Battle = BattleDAO.save(new Battle(-1, -1, weather))
@@ -80,7 +83,14 @@ class BattleService {
         player.accuracy = accuracy;
         if(spell.type == EType.DEFENCE) player.defenseMultiplier = 1 - (spell.damage / 100);
         if(spell.type == EType.HEAL) player.hp += spell.damage;
+        if(spell)
         return true;
+    }
+
+    public handleBattleStart(battle: Battle): void {
+        this.newRound(battle);
+        const index: number = this._waitingPlayersId.indexOf(battle);
+        this._waitingPlayersId.splice(index, 1);
     }
 
     /**
@@ -95,7 +105,7 @@ class BattleService {
             if(!player) return;
             if(player.status == "defeated") return;
             if(!player.spell) return;
-            if(player.spell.type != EType.ATTACK) return;
+            if(player.spell.type == EType.ATTACK) return;
             const affinityRecord : Record<EAffinity, number> = BattleProcessor.affinityMultipliers[player.spell.affinity];
             const houseMultiplier : 1.5 | 1 = BattleProcessor.houseAffinities[player.user.house as EHouse] == player.spell.affinity ? 1.5 : 1;
             const baseDamage : number = player.spell.damage * player.accuracy;
@@ -212,6 +222,8 @@ class BattleService {
         })
         return result;
     }
+
+    ///////////////////////// GETTERS /////////////////////////////
 
     public getPlayers(battle: Battle): User[]{
         const result: User[] = [];

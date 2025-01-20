@@ -114,8 +114,9 @@ class BattleSocket  {
                 })
                 return;
             }
-            if (battleService.isBattleReady(battle)){
+            if (BattleService.isBattleReady(battle)){
                 console.log(`Battle ID: ${battleId} is starting !`);
+                BattleService.handleBattleStart(battle);
                 const players: User[] = BattleService.getPlayers(battle);
                 const weather: number = BattleService.getWeather(battle);
                 players.forEach((user: User) => {
