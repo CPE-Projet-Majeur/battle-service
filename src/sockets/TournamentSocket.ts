@@ -42,7 +42,14 @@ class TournamentSocket {
     public setSocket(io: Server, wrapper: SocketWrapper) {
         wrapper.socket.on(ETournamentEvents.TOURNAMENT_CREATION, (name: string) => {
             console.log(`Creating tournament named ${name}`)
-            const tournament: Tournament = TournamentService.createTournament(name, wrapper.userId);
+            const tournament: Tournament | null = TournamentService.createTournament(name, wrapper.userId);
+            if(!tournament) {
+                wrapper.socket.emit(ESharedEvents.ERROR, {
+                    code: 1,
+                    message: "User could not be found."
+                })
+                return;
+            }
             const data : TournamentCreationData = {
                 tournamentId: tournament.id,
                 code: tournament.code
@@ -69,7 +76,8 @@ class TournamentSocket {
                     tournamentName: tournament.name,
                     tournamentParticipants: participants
                 }
-                io.to(user.tournamentSocketId).emit(ETournamentEvents.TOURNAMENT_JOINED, data)
+                //io.to(user.tournamentSocketId).emit(ETournamentEvents.TOURNAMENT_JOINED, data)
+                io.to(`user_${user.id}`).emit(ETournamentEvents.TOURNAMENT_JOINED, data)
             })
         })
 
@@ -98,7 +106,8 @@ class TournamentSocket {
                         userIds : node.userIds,
                         tree : tournament.serializeTree(),
                     }
-                    io.to(user.tournamentSocketId).emit(ETournamentEvents.TOURNAMENT_BRACKET_START,data)
+                    //io.to(user.tournamentSocketId).emit(ETournamentEvents.TOURNAMENT_BRACKET_START,data)
+                    io.to(`user_${user.id}`).emit(ETournamentEvents.TOURNAMENT_BRACKET_START, data)
                 })
             })
         })

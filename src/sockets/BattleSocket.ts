@@ -44,11 +44,6 @@ class BattleSocket  {
     public setSocket(io: Server, wrapper: SocketWrapper): void {
 
         wrapper.socket.on(EBattleEvents.BATTLE_WAITING, (data: WaitingData) => {
-            // TODO : handle scenario when user is waiting multiple times
-            // if (socketWrapper.battleId != -1) {
-            //     console.log(`User ${socketWrapper.userId} is already waiting or in battle`);
-            //     return;
-            // }
             /////////////////////////// HOOK PLAYER TO A BATTLE //////////////////////////////
             let battleId: number = Number(data.battleId);
             const userId: number = wrapper.userId;
@@ -137,7 +132,7 @@ class BattleSocket  {
                         })
                 })
             }
-            else wrapper.socket.emit("WAITING_ACKNOWLEDGED")
+            else io.to(`user_${userId}`).emit("WAITING_ACKNOWLEDGED")
         })
 
         wrapper.socket.on(EBattleEvents.BATTLE_RECEIVE_ACTION, async (data: BattleReceiveData) => {

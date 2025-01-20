@@ -53,10 +53,10 @@ class MyApp {
             }
             // Join room of sockets associated with the user
             socket.join(`user_${user.id}`)
+            console.log(`Received User ${userId} (${userFirstName}) (type=${type})`);
             // Set socket events
             const wrapper: SocketWrapper = new SocketWrapper(socket, user.id);
             if (type == 'tournament') {
-                console.log(`Received ${userId} connected for a tournament`);
                 TournamentSocket.setSocket(this.io, wrapper);
                 //user.tournamentSocketId = socket.id;
             }
@@ -64,7 +64,7 @@ class MyApp {
             //user.battleSocketId = socket.id;
             // Handle disconnection
             socket.on('disconnect', () => {
-                console.log(`Disconnected (User ${user.id}`);
+                console.log(`Disconnected User ${userId} (${userFirstName}) (type=${type})`);
                 if (type == 'tournament') TournamentSocket.handleDisconnect()
                 BattleSocket.handleDisconnect(this.io, wrapper)
             })

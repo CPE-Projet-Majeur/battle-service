@@ -70,6 +70,10 @@ joinBattleBtn.addEventListener("click", () => {
             alert(`ERROR ${data.code} : ${data.message}`);
         })
 
+        socket.on("WAITING_ACKNOWLEDGED", () => {
+            alert("WAITING_ACKNOWLEDGED");
+        })
+
         socket.on("disconnect", () => {
             addLog("Déconnecté");
         });

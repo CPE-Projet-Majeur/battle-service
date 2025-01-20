@@ -18,9 +18,12 @@ class TournamentService {
     }
 
     //////////////////// TOURNAMENT HANDLING ///////////////////
-    public createTournament(name: string, userId: number): Tournament {
+    public createTournament(name: string, userId: number): Tournament | null {
         const tournament: Tournament = TournamentDAO.save(new Tournament(-1, name, ''));
+        const user: User | undefined = UserDAO.getUserById(userId);
+        if (!user) return null;
         tournament.usersId.push(userId);
+        tournament.users.push(user);
         return tournament;
     }
 
