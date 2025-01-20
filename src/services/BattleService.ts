@@ -83,7 +83,7 @@ class BattleService {
         player.accuracy = accuracy;
         if(spell.type == EType.DEFENCE) player.defenseMultiplier = 1 - (spell.damage / 100);
         if(spell.type == EType.HEAL) player.hp += spell.damage;
-        if(spell)
+        // if(spell AILEMNT ALL OTHER PLAYERS HAVE MINUS ON ACCURACY)
         return true;
     }
 
