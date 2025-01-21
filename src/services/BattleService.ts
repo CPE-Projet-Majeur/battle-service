@@ -85,9 +85,12 @@ class BattleService {
         if (!spell || spell.name === undefined) return -2;
         player.spell = spell;
         player.accuracy = accuracy;
-        if(spell.type == EType.DEFENCE) player.defenseMultiplier = 1 - (spell.damage / 100);
-        if(spell.type == EType.HEAL) player.hp += spell.damage;
-        // if(spell AILEMNT ALL OTHER PLAYERS HAVE MINUS ON ACCURACY)
+        console.log(`User ${player.user.id} spell : 
+            ID: ${spell.id} 
+            damage: ${spell.damage} 
+            accuracy: ${player.accuracy} 
+            affinity: ${spell.affinity} 
+            type: ${spell.type}`);
         return 1;
     }
 
@@ -103,44 +106,100 @@ class BattleService {
         if (user.battleId == -1) return;
         const battle: Battle | undefined = BattleDAO.getBattleById(user.battleId);
         if (!battle) return;
-        battle.players.forEach((player: Player | null) => {
-            if(!player) return;
-            if(player.user.id == user.id) player.status = "forfeited";
-        })
+        // If battle started, send forfeit
+        if(this.isBattleReady(battle)){
+            battle.players.forEach((player: Player | null) => {
+                if(!player) return;
+                if(player.user.id == user.id) player.status = "forfeited";
+            })
+            console.log(`User ${user.id} left an ongoing battle (Id : ${battle.id}). Forfeiting...`)
+        }
+        // Else, remove user from battle
+        else {
+            battle.players.delete(user.id);
+            console.log(`User ${user.id} left a battle about to start (Id : ${battle.id}). Leaving...`)
+        }
         user.battleId = -1;
     }
 
     /**
      * Process user actions for a game where players act at the same time.
-     * Defeated users are removed from the match.
      * @param battle
      */
     public processActions(battle: Battle): BattleSendData[] {
         const result: BattleSendData[] = [];
+        // Handle pre-damage spells
+        const debufMap: Map<number, number> = new Map<number, number>()
+        const damageMap: Map<number, number> = new Map<number, number>();
+        battle.players.forEach(player => {
+            if(!player) return;
+            if(!this.isPlayerAlive(player)) return;
+            if(!player.spell) return;
+            const spell: Spell = player.spell;
+            switch(spell.type) {
+                case EType.DEFENSE:
+                    player.defenseMultiplier = 1 - (spell.damage * player.accuracy / 100); // use Map aswell
+                    console.log(`User ${player.user.id} used a defence spell : ${spell.damage * player.accuracy}% damage reduction.`)
+                    break;
+                case EType.HEAL:
+                    player.hp += Math.min(100, Math.round(spell.damage * player.accuracy));
+                    console.log(`User ${player.user.id} used a healing spell : healed ${Math.round(spell.damage * player.accuracy)} hp.`)
+                    break;
+                case EType.AILMENT:
+                    //Will lower opponent accuracy on attacks
+                    debufMap.set(player.user.id, 1 - (spell.damage * player.accuracy / 100));
+                    console.log(`User ${player.user.id} used an ailment spell : ${spell.damage * player.accuracy}% accuracy for all oponent for this turn.`)
+                    break;
+            }
+        })
         // Compute damage dealt by each player
         battle.players.forEach(player => {
             if(!player) return;
-            if(this.isPlayerAlive(player)) return;
+            if(!this.isPlayerAlive(player)) return;
+            damageMap.set(player.user.id, 0);
             if(!player.spell) return;
-            if(player.spell.type != EType.ATTACK) return;
+            //if(player.spell.type != EType.ATTACK) return;
             const affinityRecord : Record<EAffinity, number> = BattleProcessor.affinityMultipliers[player.spell.affinity];
             const houseMultiplier : 1.5 | 1 = BattleProcessor.houseAffinities[player.user.house as EHouse] == player.spell.affinity ? 1.5 : 1;
-            const baseDamage : number = player.spell.damage * player.accuracy;
+            const baseDamage : number = player.spell.damage * player.accuracy
+            let debuffMultiplier : number = 1;
+            // Player is not affected by its own ailment spell
+            debufMap.forEach((value: number, key: number) => {if(key != player.user.id) debuffMultiplier *= value;})
             // All enemies are attacked
             battle.players.forEach(target => {
+                if(!player.spell) return;
                 if (!target) return;
-                if (this.isPlayerAlive(target)) return;
+                if (!this.isPlayerAlive(target)) return;
                 if (target.user.id === player.user.id) return;
                 if (!target.spell) return;
                 // if same team, pass
-                const typeMultiplier: number = affinityRecord[target.spell.affinity];
-                const finalDamage: number = Math.round(baseDamage * typeMultiplier * houseMultiplier);
-                console.log(`user ${player.user.id} targeting user ${target.user.id} => typeMultiplier: ${typeMultiplier}, houseMultiplier: ${houseMultiplier}`);
-
-                target.hp = Math.max(0, target.hp - finalDamage);
+                if(player.spell.type == EType.ATTACK) {
+                    const typeMultiplier: number = affinityRecord[target.spell.affinity];
+                    const finalDamage: number = Math.round(baseDamage * typeMultiplier * houseMultiplier * debuffMultiplier * target.defenseMultiplier);
+                    console.log(`User ${player.user.id} targeting user ${target.user.id} :
+                        baseDamage: ${baseDamage}
+                        typeMultiplier: ${typeMultiplier} (${player.spell.affinity}/${target.spell.affinity})
+                        houseMultiplier: ${houseMultiplier} 
+                        target's defenseMultiplier: ${target.defenseMultiplier}
+                        debuffMultiplier: ${debuffMultiplier}
+                        finalDamage: ${finalDamage}`);
+                    if (finalDamage > player.highestDamage) player.highestDamage = finalDamage; // For draw resolution
+                    // Push results
+                    target.hp = Math.max(0, target.hp - finalDamage);
+                    result.push({
+                        targetId: target.user.id,
+                        damage: finalDamage,
+                        accuracy: player.accuracy,
+                        // @ts-ignore
+                        spellName: player.spell.name,
+                        remainingHp: target.hp
+                    })
+                    return;
+                }
+                // Else, if spell is not an attack
                 result.push({
                     targetId: target.user.id,
-                    damage: finalDamage,
+                    damage: 0,
                     accuracy: player.accuracy,
                     // @ts-ignore
                     spellName: player.spell.name,
@@ -148,6 +207,7 @@ class BattleService {
                 })
             })
         })
+        // Process defeats
         battle.players.forEach(player => {
             if(!player) return;
             if(player.hp <= 0) player.status = "defeated";
@@ -164,15 +224,15 @@ class BattleService {
         let highestDamagePlayerId: number = 0;
         battle.players.forEach(player => {
             if (!player) return;
-            if (player.status == "alive") battle.winners.push(player.user.id)
-            else if (player.damage > highestDamage) {
-                highestDamage = player.damage;
+            if (this.isPlayerAlive(player)) battle.winners.push(player.user.id)
+            else if (player.highestDamage > highestDamage) {
+                highestDamage = player.highestDamage;
                 highestDamagePlayerId = player.user.id;
             }
         })
         // Handle draw the best we can for now
         if(battle.winners.length == 0){
-            console.log(`Battle of ID ${battle.id} resulted in a draw. Winners are decided over highestDamage.`)
+            console.log(`Battle of ID ${battle.id} resulted in a draw. Winners are decided over highestDamage. => User ${highestDamagePlayerId} won!`)
             battle.winners.push(highestDamagePlayerId);
         }
         // TODO : check that winners.length < NUMBER OF PLAYERS THAT CAN WIN
@@ -192,7 +252,8 @@ class BattleService {
         battle.players.forEach(player => {
             if (!player) return;
             player.spell = null
-            player.damage = 0;
+            player.highestDamage = 0;
+            player.defenseMultiplier = 1;
         });
         battle.round ++;
         return true;
@@ -214,6 +275,7 @@ class BattleService {
     }
 
     public isRoundOver(battle: Battle): boolean {
+        if (this.isBattleOver(battle)) return true;
         let ret : boolean = true;
         battle.players.forEach(player => {
             if (!player) return;
@@ -226,13 +288,13 @@ class BattleService {
         let numberFighting: number = battle.players.size;
         battle.players.forEach((player: Player | null) => {
             if (!player) return;
-            if (this.isPlayerAlive(player)) numberFighting--;
+            if (!this.isPlayerAlive(player)) numberFighting--;
         })
         return numberFighting <= BattleService.TEAM_SIZE;
     }
 
     private isPlayerAlive(player: Player): boolean {
-        return player.status != "alive";
+        return player.status == "alive";
     }
 
     public isPlayerInBattle(battle: Battle, userId: number): boolean {

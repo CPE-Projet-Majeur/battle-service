@@ -173,21 +173,21 @@ class BattleSocket  {
             const actionResult : number = await BattleService.handleAction(spellId, battle, accuracy, wrapper.userId);
             if (actionResult == -1) {
                 wrapper.socket.emit(ESharedEvents.ERROR, {
-                    code: 4,
+                    code: 1,
                     message: "The battle has not started yet."
                 });
                 return;
             }
             else if (actionResult == -2) {
                 wrapper.socket.emit(ESharedEvents.ERROR, {
-                    code: 4,
-                    message: "This spell is unknown."
+                    code: 2,
+                    message: "This spell is unknown or invalid."
                 });
                 return;
             }
             else if (actionResult == -3) {
                 wrapper.socket.emit(ESharedEvents.ERROR, {
-                    code: 4,
+                    code: 3,
                     message: "The player could not be found."
                 });
                 return;
@@ -205,7 +205,6 @@ class BattleSocket  {
                 // Send new game status to users
                 console.log(`Battle ${battle.id}'s round is over`);
                 const sendData: BattleSendData[] = BattleService.processActions(battle);
-                BattleService.newRound(battle);
                 BattleService.getPlayers(battle).forEach((player: User): void => {
                     const user: User | undefined = UserDAO.getUserById(player.id);
                     if (!user) return;
@@ -218,6 +217,7 @@ class BattleSocket  {
                     results.forEach(resultData => {
                         const user: User | undefined = UserDAO.getUserById(resultData.userId);
                         if (!user) return;
+                        user.battleId = -1;
                         io.to(`user_${user.id}`).emit(EBattleEvents.BATTLE_OVER, resultData);
                     })
                     // If battle is part of a tournament, send event to tournament socket
@@ -232,6 +232,7 @@ class BattleSocket  {
                     // TODO : Delete game from DAO...
                     return
                 }
+                BattleService.newRound(battle);
             }
         })
     }

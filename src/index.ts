@@ -65,7 +65,7 @@ class MyApp {
             // Handle disconnection
             socket.on('disconnect', () => {
                 console.log(`Disconnected User ${userId} (${userFirstName}) (type=${type})`);
-                if (type == 'tournament') TournamentSocket.handleDisconnect()
+                if (type == 'tournament') TournamentSocket.handleDisconnect(this.io, wrapper)
                 BattleSocket.handleDisconnect(this.io, wrapper)
             })
         })

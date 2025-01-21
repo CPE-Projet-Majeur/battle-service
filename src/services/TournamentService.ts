@@ -5,6 +5,7 @@ import BattleService from "./BattleService";
 import {TournamentParticipant} from "../sockets/TournamentSocket";
 import UserDAO from "../dao/UserDAO";
 import User from "../model/User";
+import {ETournamentEvents} from "../sockets/events/ETournamentEvents";
 
 class TournamentService {
 
@@ -26,13 +27,18 @@ class TournamentService {
         return tournament;
     }
 
-    public joinTournament(code: string, userId: number): Tournament | null {
+    public joinTournament(code: string, userId: number): {tournament: Tournament | null, retCode: number} {
+        const user: User | undefined = UserDAO.getUserById(userId);
+        if (!user) return {tournament: null, retCode: -1};
+        if(user.tournamentId != -1) return {tournament: null, retCode: -2};
         const tournament: Tournament | undefined = TournamentDAO.getTournamentByCode(code);
-        if (!tournament) return null;
-        if (tournament.usersId.length >= TournamentService._MAX_PLAYERS) return null;
-        if (tournament.usersId.findIndex(id => id === userId) > -1) return null; // User already in
+        if (!tournament) return {tournament: null, retCode: -3};
+        if (tournament.usersId.length >= TournamentService._MAX_PLAYERS) return {tournament: null, retCode: -4};
+        if (tournament.usersId.findIndex(id => id === userId) > -1) return {tournament: null, retCode: -5}; // User already in
+        if (tournament.active) return {tournament: null, retCode: -6}
         tournament.usersId.push(userId);
-        return tournament;
+        user.tournamentId = tournament.id;
+        return {tournament: tournament, retCode: 1};
     }
 
     public startTournament(tournament: Tournament): TournamentNode[] | null {
@@ -132,8 +138,22 @@ class TournamentService {
         return participants;
     }
 
-    public handleDisconnect() {
-        // If tournament not started, remove user from tournament and warn others
+    public handleDisconnect(userId: number) : Tournament | null{
+        // If tournament not started, remove user from tournament
+        const user: User | undefined = UserDAO.getUserById(userId);
+        if (!user) return null;
+        if (user.tournamentId == -1) return null;
+        const tournamentId: number = user.tournamentId;
+        if (tournamentId == -1) return null;
+        const tournament: Tournament | undefined = TournamentDAO.getTournamentById(tournamentId);
+        if (!tournament) return null;
+        if (!tournament.active) {
+            const index: number = tournament.usersId.findIndex((id: number) => id === user.id);
+            if (index < 0) return null;
+            tournament.usersId.splice(index, 1);
+        }
+        user.tournamentId = -1;
+        return tournament;
     }
 
     public deleteTournament(tournament: Tournament): boolean {

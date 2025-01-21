@@ -18,6 +18,7 @@ describe("BattleService", () => {
 
     let mockSpell: Spell;
     let mockSpell2: Spell;
+    let mockSpell3: Spell;
     let mockBattle: Battle;
     let mockTournamentBattle: Battle;
     let mockUser: User;
@@ -27,6 +28,7 @@ describe("BattleService", () => {
     beforeEach(() => {
         mockSpell = new Spell(1, "Aguamenti", "Plouf l'eau", "WIND", "ATTACK", 20, 2);
         mockSpell2 = new Spell(2, "Agidyne", "Ca brule", "FIRE", "ATTACK", 20, 2);
+        mockSpell3 = new Spell(3, "Healing", "soin", "NEUTRAL", "HEAL", 20, 1);
         mockUser = new User(1, "McFlopper", "Floppa", 0);
         mockUser2 = new User(2, "Shadow", "The Hedgehog", 2);
         mockUser3 = new User(3, "Mew", "Two", 3);
@@ -138,7 +140,7 @@ describe("BattleService", () => {
         })
         it("should return -3 if the player could not be found", async () => {
             jest.spyOn(SpellDAO, "getSpellById").mockResolvedValueOnce(mockSpell);
-            jest.spyOn(mockBattle.players, "get").mockReturnValueOnce(undefined)
+            jest.spyOn(mockBattle.players, "get").mockReturnValueOnce(undefined);
             mockBattle.addPlayer(mockUser2); // Make battle ready with enough players
             const result: number = await BattleService.handleAction(1, mockBattle, 0.8, 1)
             expect(SpellDAO.getSpellById).toHaveReturnedTimes(0);
@@ -175,6 +177,16 @@ describe("BattleService", () => {
             expect(user1Damage).toBe(13);
             expect(user2Damage).toBe(19);
         })
+        // it("should heal when a healing spell is used", () => {
+        //     // @ts-ignore
+        //     mockBattle.players.get(2).spell = mockSpell3;
+        //     // @ts-ignore
+        //     mockBattle.players.get(2).accuracy = 0.8;
+        //     // @ts-ignore
+        //     mockBattle.players.get(2).hp = 80;
+        //     const healing: number = mockSpell3.damage * 0.8; // Healing = spell damage * accuracy
+        //     const data: BattleSendData[] = BattleService.processActions(mockBattle);
+        // })
         it("should not attack forfeited or defeated players", () => {
             // @ts-ignore
             mockBattle.players.get(2).status = "defeated";

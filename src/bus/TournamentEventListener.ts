@@ -7,6 +7,7 @@ import User from "../model/User";
 import userDAO from "../dao/UserDAO";
 import {Server} from "socket.io";
 import {eventBus} from "./eventBus";
+import UserDAO from "../dao/UserDAO";
 
 type BracketUpdateDate = {
     battleId: number;
@@ -30,10 +31,20 @@ export default class TournamentEventListener {
             // If tournament is over
             if(TournamentService.isTournamentOver(tournament)) {
                 console.log(`Tournament ${tournament.id} is over ! Winners : ${tournament.winners}`)
-                io.to(roomName).emit(ETournamentEvents.TOURNAMENT_OVER, {
-                    winnersIds: tournament.winners,
-                    tree: tournament.serializeTree()
-                });
+                tournament.usersId.forEach((id: number) => {
+                    const user: User | undefined = UserDAO.getUserById(id);
+                    if (!user) return;
+                    user.tournamentId = -1;
+                    io.to(`user_${id}`).emit(ETournamentEvents.TOURNAMENT_OVER, {
+                        winnersIds: tournament.winners,
+                        tree: tournament.serializeTree()
+                    });
+                })
+                // console.log(`Tournament ${tournament.id} is over ! Winners : ${tournament.winners}`)
+                // io.to(roomName).emit(ETournamentEvents.TOURNAMENT_OVER, {
+                //     winnersIds: tournament.winners,
+                //     tree: tournament.serializeTree()
+                // });
                 return
             }
             // Else, if current bracket is over
