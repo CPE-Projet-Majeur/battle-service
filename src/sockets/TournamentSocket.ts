@@ -105,8 +105,10 @@ class TournamentSocket {
             }
             const firstBracket: TournamentNode[] | null = TournamentService.startTournament(tournament);
             if (!firstBracket) {
-                console.log(`Tournament ${tournamentId} could not be started`)
-                // Send error
+                wrapper.socket.emit(ESharedEvents.ERROR, {
+                    code: 2,
+                    message: "Bracket failed to be computed."
+                })
                 return;
             }
             console.log(`Tournament ${tournament.id} is starting !`)
