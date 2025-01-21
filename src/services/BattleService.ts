@@ -225,6 +225,7 @@ class BattleService {
         battle.players.forEach(player => {
             if (!player) return;
             if (this.isPlayerAlive(player)) battle.winners.push(player.user.id)
+            // For draw handling
             else if (player.highestDamage > highestDamage) {
                 highestDamage = player.highestDamage;
                 highestDamagePlayerId = player.user.id;

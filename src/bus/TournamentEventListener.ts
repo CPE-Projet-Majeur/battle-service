@@ -32,16 +32,16 @@ export default class TournamentEventListener {
             if(TournamentService.isTournamentOver(tournament)) {
                 console.log(`Tournament ${tournament.id} is over ! Winners : ${tournament.winners}`)
                 // TODO : Get winners names (very ugly to do that here, rework architecture if time allows)
+                // Must be computed before sending result payload
                 const winnersNames: string[] = [];
-                // tournament.winners.forEach((id: number) => {
-                //     const user: User | undefined = UserDAO.getUserById(id);
-                //     if (!user) return;
-                //     winnersNames.push(user.firstName);
-                // })
+                tournament.winners.forEach((id: number) => {
+                    const user: User | undefined = UserDAO.getUserById(id);
+                    if (!user) return;
+                    winnersNames.push(user.firstName);
+                })
                 tournament.usersId.forEach((id: number) => {
                     const user: User | undefined = UserDAO.getUserById(id);
                     if (!user) return;
-                    if (tournament.winners.includes(user.id)) winnersNames.push(user.firstName);
                     user.tournamentId = -1;
                     io.to(`user_${id}`).emit(ETournamentEvents.TOURNAMENT_OVER, {
                         winnersIds: tournament.winners,
