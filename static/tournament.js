@@ -78,7 +78,7 @@ document.getElementById('connectButton').addEventListener('click', () => {
 
     // Fin tournois
     socket.on(ETournamentActions.TOURNAMENT_OVER, (data) => {
-        const message = `Fin du tournois : ! Gagnants : ${data.winnersIds.join(', ')}`;
+        const message = `Fin du tournois : ! Gagnants : ${data.winnersNames.join(', ')}`;
         addLog(message);
     });
 
