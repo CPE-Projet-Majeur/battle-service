@@ -33,14 +33,15 @@ export default class TournamentEventListener {
                 console.log(`Tournament ${tournament.id} is over ! Winners : ${tournament.winners}`)
                 // TODO : Get winners names (very ugly to do that here, rework architecture if time allows)
                 const winnersNames: string[] = [];
-                tournament.winners.forEach((id: number) => {
-                    const user: User | undefined = UserDAO.getUserById(id);
-                    if (!user) return;
-                    winnersNames.push(user.firstName);
-                })
+                // tournament.winners.forEach((id: number) => {
+                //     const user: User | undefined = UserDAO.getUserById(id);
+                //     if (!user) return;
+                //     winnersNames.push(user.firstName);
+                // })
                 tournament.usersId.forEach((id: number) => {
                     const user: User | undefined = UserDAO.getUserById(id);
                     if (!user) return;
+                    if (tournament.winners.includes(user.id)) winnersNames.push(user.firstName);
                     user.tournamentId = -1;
                     io.to(`user_${id}`).emit(ETournamentEvents.TOURNAMENT_OVER, {
                         winnersIds: tournament.winners,
@@ -71,9 +72,8 @@ export default class TournamentEventListener {
                             userIds : node.userIds,
                             tree : tournament.serializeTree(),
                         }
-                        const roomName = `user_${user.id}`
-                        console.log(`Sending to sockets in room ${roomName}`) // Non tournament socket linked to users will also receive it...
-                        io.to(roomName).emit(ETournamentEvents.TOURNAMENT_BRACKET_START,data);
+                        console.log(`Sending to sockets in room user_${user.id}`) // Non tournament socket linked to users will also receive it...
+                        io.to(`user_${user.id}`).emit(ETournamentEvents.TOURNAMENT_BRACKET_START,data);
                     })
                 })
             }
