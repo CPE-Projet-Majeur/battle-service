@@ -18,17 +18,20 @@ export default class TournamentNode {
     }
 
     public serialize(): string {
-        // VERY UGLY TO DO THAT THERE => REWORD ARCHITECTURE SO THAT USERSNAMES ARE STORED IN ATTRIBUTES
+        // TODO : VERY UGLY TO DO THAT THERE => REWORD ARCHITECTURE SO THAT USERSNAMES ARE STORED IN ATTRIBUTES
         const userNames: string[] = [];
+        const winnerNames: string[] = [];
         this._userIds.forEach((id: number) => {
             const user: User | undefined = UserDAO.getUserById(id);
             if (!user) return null;
+            if (this._winners.includes(id)) winnerNames.push(user.firstName)
             userNames.push(user.firstName);
         })
         return JSON.stringify({
             userId: this._userIds,
             userNames: userNames,
-            winners: this._winners,
+            winnersIds: this._winners, // TODO : Remove when architecture is reworked
+            winnersNames: winnerNames,
             status: this._status
         });
     }
