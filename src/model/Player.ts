@@ -12,7 +12,7 @@ export default class Player {
     private _accuracy: number = 0;
     private _hp: number = Player.HEALTH_POINTS;
     private _defenseMultiplier: number = 1;
-    private _damage: number = 0;
+    private _highestDamage: number = 0;
 
     constructor(user: User) {
         this._user = user;
@@ -29,6 +29,10 @@ export default class Player {
     set hp(value: number) {
         if (value < 0) {
             this._hp = 0;
+            return;
+        }
+        if (value > Player.HEALTH_POINTS) {
+            this._hp = Player.HEALTH_POINTS;
             return;
         }
         this._hp = value;
@@ -59,12 +63,12 @@ export default class Player {
         this._status = value;
     }
 
-    get damage(): number {
-        return this._damage;
+    get highestDamage(): number {
+        return this._highestDamage;
     }
 
-    set damage(value: number) {
-        this._damage = value;
+    set highestDamage(value: number) {
+        this._highestDamage = value;
     }
 
     get defenseMultiplier(): number {

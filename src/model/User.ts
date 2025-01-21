@@ -4,17 +4,10 @@ import {EWeather} from "./enums/EWeather";
 export default class User {
     private _id:number;
     private _battleId: number = -1;
+    private _tournamentId:number = -1; // Use a delegate class like TournamentMapper that make the join between Users and Tournament
     private readonly _lastName: string;
     private readonly _firstName: string;
-    // private login: string;
-    // private email: string;
-    // private account: float;
     private readonly _house: EHouse;
-    // private wins:number;
-    // private defeats:number;
-    // private roles: String[];
-    // private _battleSocketId: string = "";
-    // private _tournamentSocketId: string = "";
 
     public constructor(id:number, lastName: string, firstName: string, house: number) {
         this._id = id;
@@ -50,5 +43,13 @@ export default class User {
 
     set battleId(value: number) {
         this._battleId = value;
+    }
+
+    get tournamentId(): number {
+        return this._tournamentId;
+    }
+
+    set tournamentId(value: number) {
+        this._tournamentId = value;
     }
 }
