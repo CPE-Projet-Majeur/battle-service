@@ -164,7 +164,7 @@ class BattleService {
         let highestDamagePlayerId: number = 0;
         battle.players.forEach(player => {
             if (!player) return;
-            if (player.status != "defeated") battle.winners.push(player.user.id)
+            if (player.status == "alive") battle.winners.push(player.user.id)
             else if (player.damage > highestDamage) {
                 highestDamage = player.damage;
                 highestDamagePlayerId = player.user.id;
